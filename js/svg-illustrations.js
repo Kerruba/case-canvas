@@ -715,6 +715,238 @@ window.ProfilerIllustrations = {
         <text x="44" y="60" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.5">• Trucioli chiave oro</text>
         <text x="44" y="74" fill="#991b1b" font-family="Courier Prime, monospace" font-size="7.5" font-weight="bold">• Micro-aghi 0,2mm</text>
       </g>
+    `,
+
+    // =========================================================================
+    // NEW CASE #904-AO: EREMO DI SAN BERNARDO — "L'OMBRA DELLA CRIPTA" (20 CARTE)
+    // =========================================================================
+    'abbazia-briefing': `
+      <!-- Hand-Drawn Alpine Abbey in Snowstorm & Prosecutor's 6 Questions Parchment -->
+      <!-- Alpine Peaks & Abbey Belltower on Left -->
+      <path d="M 14 114 L 42 52 L 66 86 L 98 34 L 138 114 Z" fill="__HATCH__" stroke="#1c1917" stroke-width="1.4"/>
+      <rect x="52" y="54" width="24" height="60" fill="#f5efe2" stroke="#1c1917" stroke-width="1.6"/>
+      <polygon points="48,54 64,28 80,54" fill="__CROSSHATCH__" stroke="#1c1917" stroke-width="1.6"/>
+      <rect x="76" y="74" width="44" height="40" fill="#f5efe2" stroke="#1c1917" stroke-width="1.6"/>
+      <path d="M 60 66 a 4 4 0 0 1 8 0 v 10 h -8 z" fill="#1c1917"/>
+      <!-- Snow wind lines -->
+      <path d="M 18 32 L 42 38 M 84 24 L 114 30 M 22 48 L 46 53" stroke="#57534e" stroke-width="0.9" stroke-dasharray="3,3"/>
+      <!-- Wax-Sealed Prosecutor's Questions Scroll on Right -->
+      <g transform="translate(152, 16)">
+        <rect x="0" y="0" width="148" height="106" rx="2" fill="#fafaf9" stroke="#1c1917" stroke-width="1.6"/>
+        <text x="10" y="18" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">QUESITI DELLA PROCURA</text>
+        <line x1="10" y1="23" x2="138" y2="23" stroke="#1c1917" stroke-width="1"/>
+        <text x="10" y="37" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">1. Assassino &amp; Arma reale?</text>
+        <text x="10" y="50" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">2. Ora morte vs Orologio?</text>
+        <text x="10" y="63" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">3. Movente &amp; Codex Vallis?</text>
+        <text x="10" y="76" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">4. Chi colpisce col bronzo?</text>
+        <text x="10" y="89" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">5. Chi avvelena il Genepy?</text>
+        <text x="10" y="101" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">6. Chi sposta il corpo?</text>
+        <circle cx="132" cy="90" r="9" fill="#b91c1c" stroke="#1c1917" stroke-width="1.2"/>
+      </g>
+    `,
+
+    'abbazia-crypt-stairs': `
+      <!-- Sketch of Steep Stone Crypt Staircase, Body at Base, Bronze Candelabrum & Watch at 22:40 -->
+      <!-- Stone Steps descending left to right -->
+      <path d="M 18 24 L 46 24 L 46 42 L 74 42 L 74 60 L 102 60 L 102 78 L 130 78 L 130 96 L 158 96 L 158 114 L 18 114 Z" fill="__HATCH__" stroke="#1c1917" stroke-width="1.7"/>
+      <!-- Body at foot of stairs -->
+      <ellipse cx="186" cy="104" rx="12" ry="9" fill="#f5efe2" stroke="#1c1917" stroke-width="1.6"/>
+      <path d="M 196 104 C 216 96, 238 98, 252 112 L 194 114 Z" fill="__CROSSHATCH__" stroke="#1c1917" stroke-width="1.6"/>
+      <!-- Three-branched Bronze Candelabrum on floor -->
+      <g transform="translate(148, 42)">
+        <line x1="24" y1="12" x2="24" y2="42" stroke="#b45309" stroke-width="2.4"/>
+        <path d="M 12 20 Q 24 30 36 20" fill="none" stroke="#b45309" stroke-width="2"/>
+        <polygon points="16,42 32,42 28,36 20,36" fill="#b45309" stroke="#1c1917" stroke-width="1.1"/>
+        <circle cx="24" cy="26" r="16" fill="none" stroke="#b91c1c" stroke-width="1.2" stroke-dasharray="3,2"/>
+      </g>
+      <!-- Broken Wristwatch zoom on Top Right (22:40 + pulled crown) -->
+      <g transform="translate(216, 18)">
+        <circle cx="42" cy="38" r="24" fill="#fafaf9" stroke="#1c1917" stroke-width="1.8"/>
+        <line x1="42" y1="38" x2="28" y2="28" stroke="#1c1917" stroke-width="2"/>
+        <line x1="42" y1="38" x2="26" y2="48" stroke="#1c1917" stroke-width="1.5"/>
+        <!-- Pulled setting crown on right -->
+        <line x1="66" y1="38" x2="76" y2="38" stroke="#b91c1c" stroke-width="2"/>
+        <rect x="76" y="33" width="5" height="10" fill="#b91c1c" stroke="#1c1917" stroke-width="1"/>
+        <text x="14" y="76" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8" font-weight="bold">22:40 (Corona estratta)</text>
+      </g>
+    `,
+
+    'abbazia-scriptorium': `
+      <!-- Sketch of Medieval Scriptorium Desk, Codex Vallis under UV Lamp, Tipped Genepy Glass in Planter -->
+      <!-- Wooden Lectern & Illuminated Codex Vallis -->
+      <polygon points="26,56 124,46 136,96 20,108" fill="#d6c7b2" stroke="#1c1917" stroke-width="1.7"/>
+      <path d="M 40 58 L 76 54 L 82 90 L 44 95 Z M 76 54 L 114 50 L 120 86 L 82 90 Z" fill="#fafaf9" stroke="#1c1917" stroke-width="1.4"/>
+      <!-- UV Lamp cone of light -->
+      <path d="M 68 18 L 92 18 L 86 28 L 74 28 Z" fill="__CROSSHATCH__" stroke="#1c1917" stroke-width="1.5"/>
+      <polygon points="74,28 86,28 118,86 42,92" fill="#7c3aed" fill-opacity="0.18" stroke="#6d28d9" stroke-width="0.9" stroke-dasharray="3,2"/>
+      <text x="26" y="122" fill="#1c1917" font-family="Courier Prime, monospace" font-size="8" font-weight="bold">Lampada UV su Codex</text>
+      <!-- Planter Pot with spilled Genepy liqueur & Orpiment -->
+      <g transform="translate(168, 28)">
+        <polygon points="18,46 68,46 60,84 26,84" fill="__CROSSHATCH__" stroke="#1c1917" stroke-width="1.6"/>
+        <path d="M 32 46 Q 24 24 14 20 M 44 46 Q 44 18 48 12 M 54 46 Q 64 24 72 22" fill="none" stroke="#15803d" stroke-width="1.7"/>
+        <!-- Tipped liqueur glass pouring yellow/green liquid into soil -->
+        <polygon points="72,32 96,24 94,42" fill="#fde047" fill-opacity="0.6" stroke="#1c1917" stroke-width="1.3"/>
+        <text x="6" y="98" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8" font-weight="bold">Genepy + Arsenico in terra</text>
+      </g>
+    `,
+
+    'abbazia-priore': `
+      <!-- Portrait Sketch of Padre Anselmo Viret (Monastic Habit, Brass-Tipped Walking Cane) -->
+      <g transform="translate(24, 14)">
+        <rect x="0" y="4" width="84" height="108" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <rect x="4" y="8" width="76" height="100" fill="__HATCH__" stroke="#57534e" stroke-width="0.7"/>
+        <path d="M 26 42 C 26 62, 34 72, 42 72 C 50 72, 58 62, 58 42 C 58 26, 26 26, 26 42 Z" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <circle cx="35" cy="46" r="1.3" fill="#1c1917"/>
+        <circle cx="49" cy="46" r="1.3" fill="#1c1917"/>
+        <path d="M 35 62 Q 42 59 49 62" fill="none" stroke="#1c1917" stroke-width="1.2"/>
+        <!-- Monastic Cowl & Cross -->
+        <path d="M 10 108 C 14 78, 28 74, 42 74 C 56 74, 70 78, 74 108" fill="__CROSSHATCH__" stroke="#1c1917" stroke-width="1.8"/>
+        <line x1="42" y1="82" x2="42" y2="102" stroke="#d97706" stroke-width="2"/>
+        <line x1="35" y1="88" x2="49" y2="88" stroke="#d97706" stroke-width="2"/>
+      </g>
+      <g transform="translate(126, 24)">
+        <text x="0" y="14" fill="#1c1917" font-family="Courier Prime, monospace" font-size="10" font-weight="bold">Padre Anselmo Viret (Priore)</text>
+        <line x1="0" y1="20" x2="174" y2="20" stroke="#1c1917" stroke-width="1"/>
+        <text x="0" y="38" fill="#292524" font-family="Courier Prime, monospace" font-size="8.5">• Artrosi ginocchio DX (Bastone)</text>
+        <text x="0" y="54" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">• Puntale ottone + cera d'api</text>
+        <text x="0" y="70" fill="#292524" font-family="Courier Prime, monospace" font-size="8.5">• Nello Scriptorium alle 22:18</text>
+        <text x="0" y="86" fill="#292524" font-family="Courier Prime, monospace" font-size="8">• Destrorso | Gruppo A+</text>
+      </g>
+    `,
+
+    'abbazia-chimica': `
+      <!-- Portrait Sketch of Dott.ssa Miriam Alverà (Restorer, Orpiment Jar & Clove Cigarette) -->
+      <g transform="translate(24, 14)">
+        <rect x="0" y="4" width="84" height="108" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <rect x="4" y="8" width="76" height="100" fill="__HATCH__" stroke="#57534e" stroke-width="0.7"/>
+        <path d="M 22 44 C 18 20, 66 20, 62 44" fill="__CROSSHATCH__" stroke="#1c1917" stroke-width="1.6"/>
+        <path d="M 26 42 C 26 62, 34 72, 42 72 C 50 72, 58 62, 58 42 C 58 28, 26 28, 26 42 Z" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <circle cx="35" cy="45" r="1.4" fill="#1c1917"/>
+        <circle cx="49" cy="45" r="1.4" fill="#1c1917"/>
+        <path d="M 37 62 L 47 62" stroke="#1c1917" stroke-width="1.2"/>
+        <path d="M 12 108 C 16 82, 28 76, 42 76 C 56 76, 68 82, 72 108" fill="#fafaf9" stroke="#1c1917" stroke-width="1.6"/>
+        <!-- Yellow Orpiment stain on sleeve -->
+        <circle cx="62" cy="96" r="6" fill="#eab308" fill-opacity="0.7" stroke="#991b1b" stroke-width="1"/>
+      </g>
+      <g transform="translate(126, 24)">
+        <text x="0" y="14" fill="#1c1917" font-family="Courier Prime, monospace" font-size="10" font-weight="bold">Dott.ssa Miriam Alverà</text>
+        <line x1="0" y1="20" x2="174" y2="20" stroke="#1c1917" stroke-width="1"/>
+        <text x="0" y="38" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">• Pigmento Orpimento (Arsenico)</text>
+        <text x="0" y="54" fill="#292524" font-family="Courier Prime, monospace" font-size="8.5">• Sigarette al chiodo di garofano</text>
+        <text x="0" y="70" fill="#292524" font-family="Courier Prime, monospace" font-size="8.5">• In cella dalle 21:42 (Wi-Fi ok)</text>
+        <text x="0" y="86" fill="#292524" font-family="Courier Prime, monospace" font-size="8">• Mancina | Gruppo 0-</text>
+      </g>
+    `,
+
+    'abbazia-figlio': `
+      <!-- Portrait Sketch of Federico Dalmasso (Antiquarian Son, Missing EpiPen Case) -->
+      <g transform="translate(24, 14)">
+        <rect x="0" y="4" width="84" height="108" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <rect x="4" y="8" width="76" height="100" fill="__HATCH__" stroke="#57534e" stroke-width="0.7"/>
+        <path d="M 26 42 C 26 62, 34 72, 42 72 C 50 72, 58 62, 58 42 C 58 26, 26 26, 26 42 Z" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <circle cx="35" cy="45" r="1.4" fill="#1c1917"/>
+        <circle cx="49" cy="45" r="1.4" fill="#1c1917"/>
+        <path d="M 36 62 Q 42 65 48 62" fill="none" stroke="#1c1917" stroke-width="1.2"/>
+        <path d="M 12 108 C 16 82, 28 76, 42 76 C 56 76, 68 82, 72 108" fill="__CROSSHATCH__" stroke="#1c1917" stroke-width="1.6"/>
+      </g>
+      <g transform="translate(126, 24)">
+        <text x="0" y="14" fill="#1c1917" font-family="Courier Prime, monospace" font-size="10" font-weight="bold">Federico Dalmasso (Figlio)</text>
+        <line x1="0" y1="20" x2="174" y2="20" stroke="#1c1917" stroke-width="1"/>
+        <text x="0" y="38" fill="#292524" font-family="Courier Prime, monospace" font-size="8.5">• Telefono satellitare 21:30-23:00</text>
+        <text x="0" y="54" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">• 1 EpiPen rubato dalla borsa!</text>
+        <text x="0" y="70" fill="#292524" font-family="Courier Prime, monospace" font-size="8.5">• Stivali La Sportiva Tg. 43</text>
+        <text x="0" y="86" fill="#292524" font-family="Courier Prime, monospace" font-size="8">• Destrorso | Gruppo A-</text>
+      </g>
+    `,
+
+    'abbazia-suora': `
+      <!-- Portrait Sketch of Suor Cecilia / Dr. Elena Roux (Monastic Veil, Genepy Still & Syringe) -->
+      <g transform="translate(24, 14)">
+        <rect x="0" y="4" width="84" height="108" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <rect x="4" y="8" width="76" height="100" fill="__HATCH__" stroke="#57534e" stroke-width="0.7"/>
+        <!-- Monastic Veil framing face -->
+        <path d="M 14 108 L 18 30 C 22 14, 62 14, 66 30 L 70 108 Z" fill="__CROSSHATCH__" stroke="#1c1917" stroke-width="1.6"/>
+        <path d="M 27 44 C 27 62, 34 71, 42 71 C 50 71, 57 62, 57 44 C 57 30, 27 30, 27 44 Z" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <circle cx="36" cy="47" r="1.3" fill="#1c1917"/>
+        <circle cx="48" cy="47" r="1.3" fill="#1c1917"/>
+        <path d="M 37 61 L 47 61" stroke="#1c1917" stroke-width="1.2"/>
+        <rect x="28" y="72" width="28" height="10" fill="#fafaf9" stroke="#1c1917" stroke-width="1.2"/>
+      </g>
+      <g transform="translate(126, 24)">
+        <text x="0" y="14" fill="#1c1917" font-family="Courier Prime, monospace" font-size="10" font-weight="bold">Suor Cecilia (Elena Roux)</text>
+        <line x1="0" y1="20" x2="174" y2="20" stroke="#1c1917" stroke-width="1"/>
+        <text x="0" y="38" fill="#292524" font-family="Courier Prime, monospace" font-size="8.5">• Speziale &amp; Distillatrice Genepy</text>
+        <text x="0" y="54" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">• Ex Anestesista radiata a Lione</text>
+        <text x="0" y="70" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">• Fiale Succinilcolina in cella</text>
+        <text x="0" y="86" fill="#292524" font-family="Courier Prime, monospace" font-size="8">• Destrorsa | Gruppo B+</text>
+      </g>
+    `,
+
+    'abbazia-custode': `
+      <!-- Portrait Sketch of Marco Chabod (Bearded Caretaker, Lugged Boots Tg.45 & Breaker Switch) -->
+      <g transform="translate(24, 14)">
+        <rect x="0" y="4" width="84" height="108" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <rect x="4" y="8" width="76" height="100" fill="__HATCH__" stroke="#57534e" stroke-width="0.7"/>
+        <path d="M 26 42 C 26 62, 34 72, 42 72 C 50 72, 58 62, 58 42 C 58 26, 26 26, 26 42 Z" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <!-- Full beard -->
+        <path d="M 26 52 C 26 74, 58 74, 58 52 L 50 58 L 34 58 Z" fill="__CROSSHATCH__" stroke="#1c1917" stroke-width="1.4"/>
+        <circle cx="35" cy="44" r="1.4" fill="#1c1917"/>
+        <circle cx="49" cy="44" r="1.4" fill="#1c1917"/>
+        <path d="M 10 108 C 14 80, 28 76, 42 76 C 56 76, 70 80, 74 108" fill="__HATCH__" stroke="#1c1917" stroke-width="1.7"/>
+      </g>
+      <g transform="translate(126, 24)">
+        <text x="0" y="14" fill="#1c1917" font-family="Courier Prime, monospace" font-size="10" font-weight="bold">Marco Chabod (Manutentore)</text>
+        <line x1="0" y1="20" x2="174" y2="20" stroke="#1c1917" stroke-width="1"/>
+        <text x="0" y="38" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">• Blackout manuale 22:28-22:39</text>
+        <text x="0" y="54" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">• Scarponi chiodati Tg. 45</text>
+        <text x="0" y="70" fill="#292524" font-family="Courier Prime, monospace" font-size="8.5">• Pagato da Padre Anselmo</text>
+        <text x="0" y="86" fill="#292524" font-family="Courier Prime, monospace" font-size="8">• Mancino | Gruppo 0+</text>
+      </g>
+    `,
+
+    'abbazia-autopsy-epipen': `
+      <!-- Forensic Sketch: Modified EpiPen Auto-Injector & Shoulder Injection Ring vs Bloodless Skull Wound -->
+      <!-- Modified EpiPen Auto-Injector Cylinder on Left -->
+      <g transform="translate(20, 22)">
+        <rect x="12" y="12" width="112" height="22" rx="4" fill="#fef3c7" stroke="#1c1917" stroke-width="1.7"/>
+        <rect x="12" y="12" width="28" height="22" fill="#f97316" fill-opacity="0.55" stroke="#1c1917" stroke-width="1.5"/>
+        <line x1="2" y1="23" x2="12" y2="23" stroke="#b91c1c" stroke-width="2.2"/>
+        <text x="46" y="26" fill="#1c1917" font-family="Courier Prime, monospace" font-size="8" font-weight="bold">EPIPEN MODIFICATO</text>
+        <text x="6" y="54" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8" font-weight="bold">Succinilcolina + Potassio</text>
+        <text x="6" y="70" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.5">• Colpo alla nuca: ESANGUE</text>
+        <text x="6" y="84" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8" font-weight="bold">  (Inflitto Post-Mortem!)</text>
+      </g>
+      <!-- Left Shoulder Injection Mark & CGM 21:59 on Right -->
+      <g transform="translate(172, 18)">
+        <circle cx="46" cy="44" r="28" fill="#fafaf9" stroke="#1c1917" stroke-width="1.5"/>
+        <circle cx="46" cy="44" r="10" fill="none" stroke="#b91c1c" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <circle cx="46" cy="44" r="2.5" fill="#991b1b"/>
+        <text x="80" y="36" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">Spalla SX</text>
+        <text x="80" y="50" fill="#1c1917" font-family="Courier Prime, monospace" font-size="8">Foro + Anello</text>
+        <text x="12" y="94" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">Sensore CGM: Morte 21:59</text>
+      </g>
+    `,
+
+    'abbazia-uv-codex': `
+      <!-- Sketch of UV Scan on Codex Vallis (4 Missing 1280 Folios stained with Genepy) & Lyon Shipment -->
+      <g transform="translate(18, 20)">
+        <rect x="0" y="0" width="134" height="100" fill="#fafaf9" stroke="#1c1917" stroke-width="1.5"/>
+        <text x="8" y="18" fill="#6d28d9" font-family="Courier Prime, monospace" font-size="8" font-weight="bold">SCANSIONE UV (ORE 21:53)</text>
+        <line x1="8" y1="23" x2="126" y2="23" stroke="#78716c" stroke-width="0.8"/>
+        <text x="8" y="38" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.5">Codex Vallis (XIII sec.):</text>
+        <text x="8" y="52" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8" font-weight="bold">4 Miniature Rubate!</text>
+        <text x="8" y="68" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.5">Falsi invecchiati con:</text>
+        <text x="8" y="82" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8" font-weight="bold">Decotto di Genepy</text>
+      </g>
+      <g transform="translate(166, 20)">
+        <rect x="0" y="0" width="134" height="100" fill="#f5efe2" stroke="#1c1917" stroke-width="1.5"/>
+        <text x="8" y="18" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8" font-weight="bold">CASSE LIQUORE -&gt; LIONE</text>
+        <line x1="8" y1="23" x2="126" y2="23" stroke="#78716c" stroke-width="0.8"/>
+        <text x="8" y="40" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.5">Spedizioni Erboristeria</text>
+        <text x="8" y="54" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.5">firmate da Suor Cecilia</text>
+        <text x="8" y="72" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.5">Conto Elena Roux:</text>
+        <text x="8" y="88" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">+ EUR 680.000</text>
+      </g>
     `
   }
 };

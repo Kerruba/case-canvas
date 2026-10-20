@@ -221,10 +221,10 @@
     cacheDom();
     bindGlobalEvents();
 
-    let lastScenarioId = localStorage.getItem(STORAGE_PREFIX + 'active_scenario') || 'caso-718-fenice';
-    if (!localStorage.getItem(STORAGE_PREFIX + 'introduced_718')) {
-      localStorage.setItem(STORAGE_PREFIX + 'introduced_718', '1');
-      lastScenarioId = 'caso-718-fenice';
+    let lastScenarioId = localStorage.getItem(STORAGE_PREFIX + 'active_scenario') || 'caso-904-abbazia';
+    if (!localStorage.getItem(STORAGE_PREFIX + 'introduced_904')) {
+      localStorage.setItem(STORAGE_PREFIX + 'introduced_904', '1');
+      lastScenarioId = 'caso-904-abbazia';
     }
     await loadScenarioById(lastScenarioId);
   }
@@ -2316,6 +2316,18 @@
             `).join('')}
           </div>
         </div>
+
+        <!-- Prosecutor Questions Overview (Open-Ended, Zero Spoilers) -->
+        <div class="bg-amber-950/20 border border-amber-600/50 rounded-lg p-4">
+          <div class="text-xs font-mono-tech font-bold uppercase tracking-wider text-amber-400 mb-2">
+            ❓ Quesiti Ufficiali della Procura (Risposta Aperta a Fine Indagine)
+          </div>
+          <div class="flex flex-col gap-1.5 text-xs text-stone-200 font-medium">
+            ${(state.scenario.solution || []).map(q => `
+              <div class="py-1 border-b border-stone-800/80 last:border-b-0">${escapeHtml(q.question)}</div>
+            `).join('')}
+          </div>
+        </div>
       </div>
     `;
 
@@ -2328,6 +2340,42 @@
     dom.solveModal.classList.remove('hidden');
   }
 
+  /**
+   * Evaluates an open-text investigator answer against the question's acceptedKeywords
+   * or falls back to matching significant keywords from officialAnswer / correct option.
+   */
+  function evaluateOpenAnswer(q, rawText) {
+    const overrideKey = '__override_' + q.id;
+    if (state.verdictAnswers && typeof state.verdictAnswers[overrideKey] === 'boolean') {
+      return state.verdictAnswers[overrideKey];
+    }
+
+    const text = String(rawText || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (text.trim().length < 3) return false;
+
+    if (Array.isArray(q.acceptedKeywords) && q.acceptedKeywords.length > 0) {
+      return q.acceptedKeywords.every(group =>
+        group.some(kw => {
+          const cleanKw = String(kw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          return text.includes(cleanKw);
+        })
+      );
+    }
+
+    const reference = String(q.officialAnswer || (Array.isArray(q.options) ? q.options[q.correctOptionIndex] : '') || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    const stopWords = new Set(['della', 'dello', 'delle', 'degli', 'nella', 'nello', 'nelle', 'prima', 'dopo', 'stato', 'stata', 'aveva', 'hanno', 'perche', 'come', 'quando', 'contro', 'verso', 'senza', 'anche', 'solo', 'tutto']);
+    const tokens = reference
+      .split(/[^a-z0-9:]+/)
+      .filter(t => t.length >= 4 && !stopWords.has(t));
+
+    if (tokens.length === 0) return text.trim().length >= 5;
+    const matched = tokens.filter(t => text.includes(t));
+    return matched.length >= Math.min(2, Math.ceil(tokens.length * 0.35));
+  }
+
   function renderSolveModalContent() {
     const questions = state.scenario.solution || [];
     const totalCards = state.scenario.cards.length;
@@ -2337,7 +2385,7 @@
     if (state.verdictSubmitted) {
       let correctCount = 0;
       questions.forEach(q => {
-        if (Number(state.verdictAnswers[q.id]) === q.correctOptionIndex) {
+        if (evaluateOpenAnswer(q, state.verdictAnswers[q.id])) {
           correctCount += 1;
         }
       });
@@ -2370,54 +2418,53 @@
           </div>
         </div>
       `;
-    } else if (state.drawnCount < totalCards) {
+    } else {
       scoreHtml = `
-        <div class="p-3 rounded-lg bg-amber-950/40 border border-amber-600/60 text-amber-200 text-xs mb-4 flex items-center justify-between">
-          <span>⚠️ Hai pescato <b>${state.drawnCount} carte su ${totalCards}</b>. Puoi consegnare il verdetto ora oppure pescare i reperti rimanenti.</span>
+        <div class="p-3.5 rounded-lg bg-stone-900 border border-amber-500/50 text-stone-200 text-xs mb-4 flex flex-col gap-1">
+          <div class="font-mono-tech font-bold text-amber-400 uppercase">⚖️ Deposito del Verdetto a Risposta Aperta (Senza Suggerimenti)</div>
+          <p class="text-stone-300 leading-relaxed">
+            Per non influenzare o semplificare l'indagine non sono presenti opzioni a scelta multipla. Scrivi liberamente le tue conclusioni per ciascun quesito (hai pescato <b>${state.drawnCount} carte su ${totalCards}</b>) e poi confrontale con gli atti ufficiali della Procura.
+          </p>
         </div>
       `;
     }
 
     const questionsHtml = questions.map(q => {
-      const selectedIdx = state.verdictAnswers[q.id];
-      const isCorrect = Number(selectedIdx) === q.correctOptionIndex;
+      const userAnswer = typeof state.verdictAnswers[q.id] === 'string' ? state.verdictAnswers[q.id] : '';
+      const isCorrect = state.verdictSubmitted ? evaluateOpenAnswer(q, userAnswer) : false;
+      const officialShort = q.officialAnswer || (Array.isArray(q.options) ? q.options[q.correctOptionIndex] : '');
 
       return `
-        <div class="bg-stone-900/90 border ${state.verdictSubmitted ? (isCorrect ? 'border-emerald-600' : 'border-red-600') : 'border-stone-700'} rounded-lg p-4 mb-4">
-          <h4 class="font-bold text-sm text-stone-100 mb-3">${escapeHtml(q.question)}</h4>
-          <div class="flex flex-col gap-2">
-            ${q.options.map((opt, oIdx) => {
-              const checked = Number(selectedIdx) === oIdx;
-              let optionStyle = 'bg-stone-800/80 border-stone-700 text-stone-200 hover:bg-stone-800';
-              if (state.verdictSubmitted) {
-                if (oIdx === q.correctOptionIndex) {
-                  optionStyle = 'bg-emerald-950/70 border-emerald-500 text-emerald-200 font-bold';
-                } else if (checked && oIdx !== q.correctOptionIndex) {
-                  optionStyle = 'bg-red-950/70 border-red-500 text-red-200 line-through';
-                } else {
-                  optionStyle = 'bg-stone-900/50 border-stone-800 text-stone-500';
-                }
-              } else if (checked) {
-                optionStyle = 'bg-amber-500/20 border-amber-500 text-amber-200 font-semibold';
-              }
-
-              return `
-                <label class="flex items-start gap-2.5 p-2.5 rounded border cursor-pointer transition text-xs ${optionStyle}">
-                  <input type="radio" name="verdict_${q.id}" value="${oIdx}"
-                    ${checked ? 'checked' : ''}
-                    ${state.verdictSubmitted ? 'disabled' : ''}
-                    data-question-id="${q.id}"
-                    class="mt-0.5 accent-amber-500" />
-                  <span>${escapeHtml(opt)}</span>
-                </label>
-              `;
-            }).join('')}
+        <div class="bg-stone-900/90 border ${state.verdictSubmitted ? (isCorrect ? 'border-emerald-600' : 'border-amber-600') : 'border-stone-700'} rounded-lg p-4 mb-4">
+          <div class="flex flex-wrap items-start justify-between gap-2 mb-2.5">
+            <h4 class="font-bold text-sm text-stone-100">${escapeHtml(q.question)}</h4>
+            ${state.verdictSubmitted ? `
+              <button type="button" data-toggle-score="${q.id}"
+                class="px-2.5 py-1 rounded text-[11px] font-mono-tech font-bold border transition cursor-pointer shrink-0 ${isCorrect ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300 hover:bg-emerald-900' : 'bg-stone-800 border-stone-600 text-stone-300 hover:bg-stone-700'}"
+                title="Clicca se la tua risposta aperta esprimeva il concetto corretto con parole diverse">
+                ${isCorrect ? '✔ Deduzione Esatta (Cambia)' : '✘ Segna come Indovinata'}
+              </button>
+            ` : ''}
           </div>
 
+          <textarea
+            rows="2"
+            data-question-input="${q.id}"
+            ${state.verdictSubmitted ? 'readonly' : ''}
+            placeholder="Scrivi qui la tua risposta deduttiva (es. nome, arma, orario, movente)..."
+            class="selectable-evidence-text w-full bg-stone-950 border ${state.verdictSubmitted ? (isCorrect ? 'border-emerald-500/70 text-emerald-100' : 'border-amber-500/70 text-amber-100') : 'border-stone-700 text-stone-100 focus:border-amber-500'} rounded-md p-2.5 text-xs font-medium focus:outline-none resize-y"
+          >${escapeHtml(userAnswer)}</textarea>
+
           ${state.verdictSubmitted ? `
-            <div class="mt-3 pt-3 border-t border-stone-700/80 text-xs leading-relaxed ${isCorrect ? 'text-emerald-300' : 'text-amber-300'}">
-              <span class="font-mono-tech font-bold uppercase">${isCorrect ? '✔ Deduzione Esatta:' : '✘ Ricostruzione Ufficiale:'}</span>
-              <p class="text-stone-300 mt-1">${escapeHtml(q.explanation)}</p>
+            <div class="mt-3 pt-3 border-t border-stone-700/80 text-xs leading-relaxed">
+              <div class="bg-stone-950/90 border-l-4 border-amber-500 px-3 py-2 rounded-r mb-2">
+                <span class="font-mono-tech font-bold uppercase text-amber-400 text-[11px]">🏛️ Risposta Ufficiale della Procura:</span>
+                <div class="text-stone-100 font-bold mt-0.5">${escapeHtml(officialShort)}</div>
+              </div>
+              <div class="text-stone-300">
+                <span class="font-mono-tech font-bold uppercase text-sky-400 text-[11px]">🔎 Spiegazione &amp; Prove Oggettive:</span>
+                <p class="mt-0.5">${escapeHtml(q.explanation)}</p>
+              </div>
             </div>
           ` : ''}
         </div>
@@ -2429,17 +2476,17 @@
       ${questionsHtml}
       <div class="bg-stone-900/90 border border-stone-700 rounded-lg p-4 mb-4">
         <label class="block text-xs font-mono-tech uppercase text-stone-400 mb-1.5">
-          📝 Relazione Conclusiva dell'Investigatore (Opzionale — Sintesi della dinamica)
+          📝 Appunti Generali sul Caso (Opzionale)
         </label>
         <textarea id="verdict-notes-input" rows="2" ${state.verdictSubmitted ? 'readonly' : ''}
-          placeholder="Annota qui la tua ricostruzione complessiva prima di depositare il verdetto..."
+          placeholder="Annota qui eventuali osservazioni aggiuntive..."
           class="selectable-evidence-text w-full bg-stone-950 border border-stone-700 rounded p-2.5 text-xs text-stone-200 focus:outline-none focus:border-amber-500"
         >${escapeHtml(state.verdictNotes || '')}</textarea>
       </div>
       <div class="flex items-center justify-end gap-3 pt-2">
         ${state.verdictSubmitted ? `
-          <button type="button" id="btn-reopen-verdict" class="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded-md text-xs font-bold transition">
-            🔄 Riprova Questionario
+          <button type="button" id="btn-reopen-verdict" class="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded-md text-xs font-bold transition cursor-pointer">
+            🔄 Modifica Risposte
           </button>
         ` : `
           <button type="button" id="btn-submit-verdict" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-md text-xs font-extrabold shadow-lg transition cursor-pointer">
@@ -2449,11 +2496,22 @@
       </div>
     `;
 
-    container.querySelectorAll('input[type="radio"][data-question-id]').forEach(radio => {
-      radio.addEventListener('change', e => {
-        state.verdictAnswers[e.target.dataset.questionId] = Number(e.target.value);
-        renderSolveModalContent();
+    container.querySelectorAll('textarea[data-question-input]').forEach(area => {
+      area.addEventListener('input', e => {
+        state.verdictAnswers[e.target.dataset.questionInput] = e.target.value;
         saveState();
+      });
+    });
+
+    container.querySelectorAll('button[data-toggle-score]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const qId = btn.dataset.toggleScore;
+        const qObj = questions.find(item => item.id === qId);
+        if (!qObj) return;
+        const current = evaluateOpenAnswer(qObj, state.verdictAnswers[qId]);
+        state.verdictAnswers['__override_' + qId] = !current;
+        saveState();
+        renderSolveModalContent();
       });
     });
 
@@ -2468,9 +2526,12 @@
     const btnSubmit = document.getElementById('btn-submit-verdict');
     if (btnSubmit) {
       btnSubmit.addEventListener('click', () => {
-        const unanswered = questions.filter(q => state.verdictAnswers[q.id] === undefined);
+        const unanswered = questions.filter(q => {
+          const val = state.verdictAnswers[q.id];
+          return typeof val !== 'string' || val.trim().length === 0;
+        });
         if (unanswered.length > 0) {
-          showToast(`Rispondi a tutte le ${questions.length} domande prima di consegnare il verdetto!`, 'amber');
+          showToast(`Compila una risposta per tutte le ${questions.length} domande prima di consegnare il verdetto!`, 'amber');
           return;
         }
         state.verdictSubmitted = true;
@@ -2483,7 +2544,6 @@
     if (btnReopen) {
       btnReopen.addEventListener('click', () => {
         state.verdictSubmitted = false;
-        state.verdictAnswers = {};
         saveState();
         renderSolveModalContent();
       });
