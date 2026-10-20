@@ -1,0 +1,185 @@
+{
+  "metadata": {
+    "id": "caso-112-valenti",
+    "caseNumber": "FASCICOLO #112-TO",
+    "title": "L'Ultimo Sigaro del Conte Valenti",
+    "date": "28 Ottobre 2026",
+    "location": "Palazzo Valenti, Collina di Torino",
+    "description": "Il Conte Vittorio Valenti viene trovato privo di vita alle 23:05 nella biblioteca blindata della sua tenuta. Un calice di Brandy rovesciato, un sigaro a metà e un orologio da taschino rotto sulle 22:15 sembrano raccontare una scena fin troppo chiara. Ma i reperti forensi raccontano tutta un'altra verità.",
+    "victim": {
+      "name": "Conte Vittorio Valenti",
+      "age": 74,
+      "role": "Collezionista d'Arte & Aristocratico",
+      "bloodType": "0 Negativo (0-)",
+      "notes": "Asmatico cronico grave (intollerante al fumo di tabacco). Portatore di pacemaker. Non beveva superalcolici da 5 anni per prescrizione cardiologica."
+    },
+    "suspects": [
+      {
+        "id": "v1",
+        "name": "Notaio Goffredo Serra",
+        "age": 61,
+        "role": "Curatore Patrimoniale & Amico di famiglia",
+        "traits": "Gruppo A+ (Secernente) • Fumatore di Cohiba • Indossa foulard di seta",
+        "notes": "Gestisce le aste e il caveau dei dipinti del Seicento della collezione Valenti."
+      },
+      {
+        "id": "v2",
+        "name": "Arturo Benini",
+        "age": 55,
+        "role": "Maggiordomo Capo",
+        "traits": "Gruppo B+ • Non fumatore • Sordo dall'orecchio sinistro",
+        "notes": "Unico dipendente in servizio al piano nobile la sera del delitto."
+      },
+      {
+        "id": "v3",
+        "name": "Elena Valenti",
+        "age": 29,
+        "role": "Nipote & Restauratrice",
+        "traits": "Gruppo 0- • Chimica del restauro • Alloggia nella dépendance",
+        "notes": "Utilizza solventi e sali di cianuro per la pulitura di argenti antichi nel laboratorio."
+      }
+    ]
+  },
+  "cards": [
+    {
+      "id": "v-01",
+      "number": "#01",
+      "title": "Sopralluogo Biblioteca",
+      "category": "Luogo",
+      "timestamp": "28 Ott • Ore 23:10",
+      "image": "svg:crime-scene-desk",
+      "rawText": "• Calice di cristallo rovesciato sul tappeto: residuo liquido 15 ml di Brandy.\n• Orologio da taschino del Conte: vetro incrinato, lancette bloccate sulle 22:15.\n• Posacenere sulla scrivania: 1 sigaro Cohiba fumato a metà.\n• Finestra francese verso il giardino: chiusa col chiavistello interno."
+    },
+    {
+      "id": "v-02",
+      "number": "#02",
+      "title": "Esame Autoptico Preliminare",
+      "category": "Forense",
+      "timestamp": "29 Ott • Ore 00:20",
+      "image": "svg:autopsy-ecg",
+      "rawText": "• Vittima: Gruppo 0 Negativo. Asma bronchiale severa.\n• Stomaco vittima: 0,0 ml di alcol; 0,0 mg di cianuro.\n• Vie aeree superiori: micro-fibre di seta tinta bordeaux nelle cavità nasali e petecchie congiuntivali da asfissia meccanica.\n• Log digitale Pacemaker interno: fibrillazione e arresto cardiaco registrati alle ore 21:58."
+    },
+    {
+      "id": "v-03",
+      "number": "#03",
+      "title": "Analisi Chimica & DNA Reperti",
+      "category": "Forense",
+      "timestamp": "29 Ott • Ore 01:05",
+      "image": "svg:toxicology-lab",
+      "rawText": "• Liquido nel calice rovesciato (15 ml): Brandy invecchiato + Cianuro di potassio (250 mg).\n• Mozzicone sigaro Cohiba: saliva contenente antigeni gruppo A Positivo (A+).\n• Perno della corona dell'orologio da taschino rotto sulle 22:15: rilevati graffi da pinzetta metallica sulla ghiera di regolazione manuale."
+    },
+    {
+      "id": "v-04",
+      "number": "#04",
+      "title": "Deposizione: Maggiordomo Arturo",
+      "category": "Deposizione",
+      "timestamp": "28 Ott • Ore 23:40",
+      "image": "svg:witness-matteo",
+      "rawText": "«Il Conte vietava categoricamente il fumo in biblioteca per via dell'asma.\nAlle 22:15 ero in corridoio e ho sentito un rumore di vetro infranto provenire dalla biblioteca. Ho bussato subito e una voce maschile da dentro ha gridato: 'Tutto bene Arturo, mi è caduto il calice, non entrare!'»"
+    },
+    {
+      "id": "v-05",
+      "number": "#05",
+      "title": "Deposizione: Notaio Goffredo Serra",
+      "category": "Deposizione",
+      "timestamp": "29 Ott • Ore 00:05",
+      "image": "svg:witness-lorenzo",
+      "rawText": "«Ho parlato col Conte in biblioteca fino alle 21:50. Poi sono uscito dalla porta-finestra nel giardino esterno per fumare un sigaro Cohiba in pace fino alle 22:30, rientrando dal salone principale.\nIl mio foulard di seta bordeaux l'ho smarrito la settimana scorsa.\nIl mio gruppo sanguigno è A Positivo.»"
+    },
+    {
+      "id": "v-06",
+      "number": "#06",
+      "title": "Deposizione: Elena Valenti",
+      "category": "Deposizione",
+      "timestamp": "29 Ott • Ore 00:40",
+      "image": "svg:witness-clara",
+      "rawText": "«Dalle 21:00 alle 22:45 ero nel mio laboratorio nella dépendance a catalogare cornici. È vero che ieri mattina è sparito un barattolo di sali di cianuro dal mio scaffale, ma la porta del laboratorio non era chiusa a chiave.\nMio zio aveva scoperto un ammanco nei quadri del Seicento e domani avrebbe fatto periziare il caveau.»"
+    },
+    {
+      "id": "v-07",
+      "number": "#07",
+      "title": "Bollettino Meteo & Pluviometro",
+      "category": "Documento",
+      "timestamp": "29 Ott • Ore 01:30",
+      "image": "svg:digital-logs",
+      "rawText": "• Stazione Meteo Automatica Collina di Torino (a 200m da Palazzo Valenti):\n• Dalle ore 21:45 alle ore 22:40: nubifragio violento ininterrotto (42 mm di pioggia in 55 minuti) con raffiche di vento a 60 km/h.\n• Giardino esterno privo di tettoie o porticati."
+    },
+    {
+      "id": "v-08",
+      "number": "#08",
+      "title": "Ispezione Caminetto & Guardaroba",
+      "category": "Luogo",
+      "timestamp": "29 Ott • Ore 02:10",
+      "image": "svg:greenhouse-boots",
+      "rawText": "• Caminetto spento della biblioteca: sotto la cenere fredda, rinvenuto un lembo carbonizzato di tessuto in seta bordeaux con iniziali ricamate 'G.S.' e tracce di muco nasale gruppo 0 Negativo.\n• Guardaroba ingresso: soprabito e scarpe in cuoio del Notaio Serra risultano completamente asciutti e privi di tracce di fango."
+    },
+    {
+      "id": "v-09",
+      "number": "#09",
+      "title": "Ricevute Monte dei Pegni & Perizia",
+      "category": "Documento",
+      "timestamp": "29 Ott • Ore 02:50",
+      "image": "svg:vault-registry",
+      "rawText": "• Valigetta del Notaio Serra: ricevuta riservata della Casa d'Aste Bolaffi. Serra ha impegnato 3 tele originali del Guercino appartenenti al Conte Valenti per 240.000 €, sostituendole nel caveau con copie.\n• Email sul PC del Conte (ore 20:15): convocazione di un perito assicurativo per il 29 Ottobre alle ore 09:00."
+    },
+    {
+      "id": "v-10",
+      "number": "#10",
+      "title": "Analisi Acustica & Impronte",
+      "category": "Forense",
+      "timestamp": "29 Ott • Ore 03:30",
+      "image": "svg:forensic-digital",
+      "rawText": "• Sul tavolo accanto al telefono interno: frammenti di una lampadina da scrivania schiacciata col tacco di una scarpa maschile alle 22:15 per simulare il rumore di un bicchiere rotto.\n• Sul bordo esterno del calice col cianuro: solo impronte con guanti in pelle; nessuna impronta della vittima."
+    }
+  ],
+  "solution": [
+    {
+      "id": "vq1",
+      "question": "1. Chi ha ucciso il Conte Vittorio Valenti?",
+      "options": [
+        "Arturo Benini (Maggiordomo)",
+        "Notaio Goffredo Serra",
+        "Elena Valenti (Nipote)",
+        "Un ladro esterno entrato dal giardino"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Il Notaio Goffredo Serra ha soffocato il Conte alle 21:58 con il proprio foulard di seta bordeaux (iniziali G.S. trovate nel caminetto, fibre nel naso della vittima, Carte #02 e #08), ha fumato il sigaro Cohiba (saliva A+, Carta #03) nella biblioteca dopo la morte del Conte e ha simulato che il Conte fosse ancora vivo alle 22:15 rispondendo al maggiordomo da dentro la stanza (Carta #04)."
+    },
+    {
+      "id": "vq2",
+      "question": "2. Qual è stata la vera causa della morte e a che ora è avvenuta?",
+      "options": [
+        "Avvelenamento da cianuro nel Brandy alle ore 22:15",
+        "Asfissia meccanica (soffocamento con foulard di seta bordeaux) alle ore 21:58",
+        "Attacco d'asma fatale indotto dal fumo di sigaro alle ore 22:05",
+        "Trauma cranico da caduta alle ore 22:15"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Il pacemaker certifica l'arresto cardiaco alle 21:58 (Carta #02). Nello stomaco della vittima c'erano zero alcol e zero cianuro; il calice avvelenato e l'orologio manomesso sulle 22:15 erano una messinscena (Carte #02, #03)."
+    },
+    {
+      "id": "vq3",
+      "question": "3. Quale prova smentisce categoricamente l'alibi del Notaio Serra tra le 21:50 e le 22:30?",
+      "options": [
+        "La porta-finestra era rotta da anni",
+        "Il nubifragio violento (21:45-22:40) rende impossibile aver fumato un sigaro in giardino restando con abiti e scarpe asciutti",
+        "Il maggiordomo lo ha visto uscire dalla cucina alle 22:20",
+        "Il sigaro era di una marca che Serra non fuma"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Il bollettino meteo registra un nubifragio violento dalle 21:45 alle 22:40 sul giardino scoperto (Carta #07). Serra non poteva fumare un sigaro all'aperto sotto 42 mm di pioggia ed avere soprabito e scarpe asciutti (Carta #08): in realtà era chiuso dentro la biblioteca dove ha fumato il sigaro e risposto ad Arturo alle 22:15."
+    },
+    {
+      "id": "vq4",
+      "question": "4. Qual era il movente dell'omicidio?",
+      "options": [
+        "Impedire la perizia dell'indomani che avrebbe scoperto il furto dei 3 quadri del Guercino impegnati per 240.000 €",
+        "Incassare l'eredità come unico beneficiario del testamento",
+        "Rubare la formula chimica del laboratorio di Elena",
+        "Un ricatto legato al passato militare del Conte"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Serra aveva sostituito 3 dipinti del Guercino con copie per impegnarli da Bolaffi per 240.000 €; il Conte aveva appena convocato un perito per la mattina seguente alle 09:00 (Carta #09)."
+    }
+  ]
+}

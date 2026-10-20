@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PROFILER: CRIME BOARD — Lavagna Investigativa Forense</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col relative bg-stone-950 text-stone-100">
+
+  <!-- =====================================================================
+       TOP INVESTIGATIVE BAR
+       ===================================================================== -->
+  <header class="relative shrink-0 min-h-12 sm:min-h-14 bg-stone-950/95 backdrop-blur-md border-b border-stone-800 z-50 px-2.5 sm:px-3 py-1.5 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 shadow-xl">
+    <!-- Left: Brand, Case Info & Scenario Selector -->
+    <div class="flex flex-wrap items-center gap-2 min-w-0">
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-amber-500/15 border border-amber-500/50 flex items-center justify-center text-sm sm:text-base shadow-inner">
+          🕵️‍♂️
+        </div>
+        <div class="leading-tight">
+          <div class="flex items-center gap-1.5">
+            <span class="font-extrabold tracking-wider text-[11px] sm:text-xs text-amber-400">PROFILER<span class="hidden sm:inline">: CRIME BOARD</span></span>
+            <span id="case-number-display" class="text-[9px] font-mono-tech bg-stone-800 text-stone-300 px-1.5 py-0.5 rounded border border-stone-700">FASCICOLO #409</span>
+          </div>
+          <div id="case-title-display" class="text-[11px] sm:text-xs font-semibold text-stone-200 truncate max-w-[165px] sm:max-w-[280px]">
+            Caricamento scenario...
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1 sm:gap-1.5 border-l border-stone-800 pl-2">
+        <select id="scenario-select" class="bg-stone-900 hover:bg-stone-800 text-stone-200 border border-stone-700 rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-[11px] sm:text-xs font-medium focus:outline-none focus:border-amber-500 cursor-pointer max-w-[150px] sm:max-w-[220px]" title="Seleziona uno scenario predefinito">
+          <option value="caso-409-morosini">📌 Caso #409: Villa Morosini (12 Carte)</option>
+          <option value="caso-112-valenti">📌 Caso #112: Conte Valenti (10 Carte)</option>
+        </select>
+
+        <input id="json-file-input" type="file" accept=".json,application/json" class="hidden" />
+        <button id="btn-upload-json" type="button" class="px-2 sm:px-2.5 py-1 sm:py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-700 rounded-md text-[11px] sm:text-xs font-medium transition flex items-center gap-1 cursor-pointer shrink-0" title="Carica un file scenario.json dal tuo computer">
+          📂 <span class="hidden md:inline">Carica</span> JSON
+        </button>
+
+        <button id="btn-open-dossier" type="button" class="px-2 sm:px-2.5 py-1 sm:py-1.5 bg-stone-900 hover:bg-stone-800 text-amber-300 border border-amber-500/40 rounded-md text-[11px] sm:text-xs font-semibold transition flex items-center gap-1 cursor-pointer shrink-0" title="Leggi il Briefing iniziale, la scheda della vittima e la lista sospettati">
+          📁 Dossier
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Board Tools, Deck Draw & Solve Case -->
+    <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto max-w-full pb-0.5 sm:pb-0 no-scrollbar shrink-0">
+      <button id="btn-add-group" type="button" class="px-2 sm:px-2.5 py-1 sm:py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 rounded-md text-[11px] sm:text-xs font-medium transition flex items-center gap-1 cursor-pointer shrink-0" title="Crea una nuova Area di Raggruppamento (Cluster) sulla lavagna">
+        + <span class="hidden sm:inline">Area</span> Gruppo
+      </button>
+
+      <button id="btn-tool-select" type="button" class="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 rounded-md text-[11px] sm:text-xs font-medium transition flex items-center gap-1 cursor-pointer shrink-0" title="Attiva il rettangolo di selezione multipla (oppure tieni premuto Shift e trascina)">
+        🔲 Selezione
+      </button>
+
+      <button id="btn-tool-link" type="button" class="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 rounded-md text-[11px] sm:text-xs font-medium transition flex items-center gap-1 cursor-pointer shrink-0" title="Collega due carte con un Filo Rosso (oppure clicca direttamente sulle puntine rosse)">
+        <span>🧶 Filo Rosso</span>
+      </button>
+
+      <div class="h-5 w-px bg-stone-800 mx-0.5 shrink-0"></div>
+
+      <button id="btn-draw-top" type="button" class="px-2.5 sm:px-3.5 py-1 sm:py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-md text-[11px] sm:text-xs shadow-md transition flex items-center gap-1 cursor-pointer shrink-0" title="Scorciatoia tastiera: tasto D">
+        🃏 Pesca Carta
+      </button>
+
+      <button id="btn-open-solve" type="button" class="px-2.5 sm:px-3.5 py-1 sm:py-1.5 bg-red-700 hover:bg-red-600 text-white border border-red-500 font-extrabold rounded-md text-[11px] sm:text-xs shadow-lg transition flex items-center gap-1 cursor-pointer shrink-0" title="Apri il questionario finale per risolvere il caso">
+        ⚖️ Risolvi<span class="hidden sm:inline"> il Caso</span>
+      </button>
+
+      <button id="btn-reset-board" type="button" class="p-1 sm:p-1.5 bg-stone-900 hover:bg-stone-800 text-stone-400 hover:text-red-400 border border-stone-800 rounded-md text-xs transition cursor-pointer shrink-0" title="Azzera lavagna e ricomincia il caso">
+        🔄
+      </button>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       TOP TIMELINE BAR (LINEA DEL TEMPO CON PALLINI ED EVENTI COLLEGATI)
+       ===================================================================== -->
+  <section id="timeline-bar" class="relative shrink-0 z-40 bg-stone-950/92 backdrop-blur-md border-b border-stone-800/90 px-4 py-1.5 shadow-lg transition-all">
+    <div class="flex items-center gap-3">
+      <!-- Left Header & Add Button -->
+      <div class="flex items-center gap-2 shrink-0 border-r border-stone-800 pr-3">
+        <button id="btn-toggle-timeline-bar" type="button" class="text-xs font-mono-tech font-extrabold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer" title="Mostra/Nascondi la Linea del Tempo">
+          <span>⏱️ TIMELINE</span>
+          <span id="timeline-count-badge" class="text-[10px] bg-stone-800 text-stone-300 px-1.5 py-0.2 rounded border border-stone-700">0</span>
+          <span id="timeline-chevron" class="text-[10px] text-stone-400">▴</span>
+        </button>
+        <button id="btn-add-timeline-event" type="button" class="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer" title="Aggiungi un nuovo pallino/evento sulla linea del tempo">
+          + Pallino
+        </button>
+      </div>
+
+      <!-- Horizontal Timeline Track with Dots -->
+      <div id="timeline-content-area" class="flex-1 min-w-0 overflow-x-auto timeline-scroll">
+        <div id="timeline-nodes-container" class="relative flex items-center gap-2 min-h-[62px] px-2">
+          <!-- Populated dynamically by js/app.js -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       INFINITE CANVAS (VIEWPORT & WORLD)
+       ===================================================================== -->
+  <main id="viewport" class="w-full flex-1 min-h-0 relative overflow-hidden board-surface-anthracite cursor-grab">
+    <!-- Active Link Mode Banner -->
+    <div id="link-mode-banner" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-40 bg-red-950/95 border border-red-500 text-red-100 px-4 py-1.5 rounded-full shadow-2xl flex items-center gap-3 text-xs font-semibold">
+      <span id="link-banner-text">🧶 Modalità Filo Rosso attiva — Clicca su due carte per collegarle</span>
+      <button id="btn-cancel-link-mode" type="button" class="px-2 py-0.5 rounded bg-red-800 hover:bg-red-700 text-white text-[10px] font-mono-tech uppercase cursor-pointer">
+        Esci (ESC)
+      </button>
+    </div>
+    <div id="world" class="absolute top-0 left-0 w-0 h-0">
+      <!-- 1. Drop Zones / Cluster Groups Layer -->
+      <div id="groups-layer" class="absolute top-0 left-0"></div>
+
+      <!-- 2. Physical Crime Cards Layer -->
+      <div id="cards-layer" class="absolute top-0 left-0"></div>
+
+      <!-- 3. SVG Red Strings Layer (positioned above cards so strings connect pins visibly) -->
+      <svg id="strings-svg" class="absolute top-0 left-0 overflow-visible pointer-events-none" style="width: 1px; height: 1px; z-index: 9998;"></svg>
+
+      <!-- 4. Interactive Red String Labels Layer -->
+      <div id="string-labels-layer" class="absolute top-0 left-0" style="z-index: 9999;"></div>
+    </div>
+
+    <!-- Marquee Multi-Selection Rectangle -->
+    <div id="marquee-box"></div>
+  </main>
+
+  <!-- =====================================================================
+       BOTTOM-LEFT HUD: ZOOM, SURFACE THEME & INSTRUCTIONS
+       ===================================================================== -->
+  <div id="bottom-left-hud" class="fixed bottom-3 left-2 sm:bottom-4 sm:left-4 z-30 flex flex-col items-start gap-1.5 pointer-events-none">
+    <!-- Collapsible Commands Hint Banner (auto-hidden when card selection bar is active) -->
+    <div id="hud-commands-banner" class="hidden md:flex items-center gap-2 text-[11px] text-stone-300 bg-stone-950/90 backdrop-blur px-3 py-1.5 rounded-lg border border-stone-800 shadow-lg pointer-events-auto max-w-[600px]">
+      <span>💡 <b>Comandi:</b> Trascina/Tocca sfondo per Pan (2 dita per Zoom) • <b>▴ / Doppio tap titolo</b> per Collapse • <b>Seleziona il testo</b> per Evidenziare/Copiare • Clicca <b>Puntina</b> per Filo Rosso.</span>
+      <button id="btn-close-commands-banner" type="button" class="text-stone-400 hover:text-white pl-1 font-bold cursor-pointer" title="Nascondi suggerimenti">✕</button>
+    </div>
+
+    <!-- Compact Zoom & Surface Controls Bar -->
+    <div class="flex items-center gap-1 sm:gap-1.5 bg-stone-950/95 backdrop-blur border border-stone-800 rounded-lg p-1 sm:p-1.5 shadow-xl pointer-events-auto">
+      <button id="btn-zoom-out" type="button" class="w-7 h-7 rounded bg-stone-900 hover:bg-stone-800 text-stone-200 font-bold text-sm flex items-center justify-center border border-stone-700/80 cursor-pointer" title="Zoom indietro">−</button>
+      <button id="btn-zoom-reset" type="button" class="px-1.5 sm:px-2 h-7 rounded bg-stone-900 hover:bg-stone-800 text-[11px] sm:text-xs font-mono-tech text-amber-400 border border-stone-700/80 cursor-pointer" title="Ripristina inquadratura centrale">
+        <span id="zoom-level-text">100%</span>
+      </button>
+      <button id="btn-zoom-in" type="button" class="w-7 h-7 rounded bg-stone-900 hover:bg-stone-800 text-stone-200 font-bold text-sm flex items-center justify-center border border-stone-700/80 cursor-pointer" title="Zoom avanti">+</button>
+      <div class="h-4 w-px bg-stone-800 mx-0.5"></div>
+      <button id="btn-surface-toggle" type="button" class="px-2 sm:px-2.5 h-7 rounded bg-stone-900 hover:bg-stone-800 text-[10px] sm:text-[11px] font-medium text-stone-300 border border-stone-700/80 cursor-pointer" title="Cambia materiale della lavagna">
+        ⬛ Antracite
+      </button>
+      <button id="btn-toggle-commands-banner" type="button" class="hidden sm:flex w-7 h-7 rounded bg-stone-900 hover:bg-stone-800 text-amber-400 text-xs items-center justify-center border border-stone-700/80 cursor-pointer" title="Mostra/Nascondi guida rapida comandi">
+        💡
+      </button>
+      <span id="save-status-badge" class="hidden sm:inline text-[10px] font-mono-tech text-stone-400 opacity-40 px-1.5 transition-opacity" title="Salvataggio automatico attivo in localStorage">
+        💾 Salvato
+      </span>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       CARD SELECTION FLOATING CONTEXT BAR (1 OR MORE CARDS)
+       ===================================================================== -->
+  <div id="multi-select-bar" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 z-50 max-w-[94vw] bg-stone-900/95 backdrop-blur-md border border-sky-500/80 rounded-lg px-3.5 py-2 shadow-2xl flex flex-wrap items-center justify-center gap-2.5 text-xs">
+    <span id="multi-select-count" class="font-mono-tech font-bold text-sky-400">1 carta selezionata</span>
+    <div class="h-4 w-px bg-stone-700"></div>
+    <select id="multi-group-select" class="bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/50 rounded px-2.5 py-1 text-xs font-semibold focus:outline-none focus:border-amber-400 cursor-pointer">
+      <option value="">📁 Aggiungi a un Gruppo...</option>
+    </select>
+    <button id="btn-multi-collapse" type="button" class="px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded font-semibold transition cursor-pointer" title="Riduci le carte selezionate a solo titolo (Collapse) o riespandile">
+      ▴ Riduci a Titolo
+    </button>
+    <button id="btn-multi-important" type="button" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 rounded font-semibold transition cursor-pointer">
+      📌 Importante
+    </button>
+    <button id="btn-multi-archive" type="button" class="px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 rounded font-semibold transition cursor-pointer">
+      🗑️ Archivia
+    </button>
+    <button id="btn-multi-clear" type="button" class="px-2 py-1 text-stone-400 hover:text-white transition cursor-pointer" title="Deseleziona">
+      ✕
+    </button>
+  </div>
+
+  <!-- Quick Popover Menu to Add a Card to an Existing Group -->
+  <div id="card-group-popover" class="hidden fixed z-50 w-64 bg-stone-950/95 backdrop-blur-md border border-amber-500/70 rounded-xl p-2 shadow-2xl">
+    <div class="px-2 py-1 text-[10px] font-mono-tech uppercase tracking-wider text-stone-400 border-b border-stone-800 mb-1 flex items-center justify-between">
+      <span>📁 Aggiungi Carta al Gruppo</span>
+      <button id="btn-close-group-popover" type="button" class="text-stone-400 hover:text-white font-bold cursor-pointer">✕</button>
+    </div>
+    <div id="card-group-popover-list" class="flex flex-col gap-1 max-h-60 overflow-y-auto evidence-scroll"></div>
+  </div>
+
+  <!-- =====================================================================
+       FLOATING TEXT SELECTION TOOLBAR (HIGHLIGHTER, COPY & SEND TO POST-IT)
+       ===================================================================== -->
+  <div id="text-selection-toolbar" class="hidden bg-stone-950/95 backdrop-blur-md border border-amber-500/70 rounded-lg px-2.5 py-1.5 shadow-2xl flex items-center gap-1.5 text-xs">
+    <span class="text-[10px] font-mono-tech text-stone-400 uppercase mr-0.5">Evidenzia:</span>
+    <button type="button" data-hl-color="yellow" class="w-5 h-5 rounded bg-yellow-300 hover:scale-110 border border-yellow-600 transition cursor-pointer" title="Evidenzia in Giallo (Indizio)"></button>
+    <button type="button" data-hl-color="red" class="w-5 h-5 rounded bg-red-400 hover:scale-110 border border-red-700 transition cursor-pointer" title="Evidenzia in Rosso (Contraddizione / Sospetto)"></button>
+    <button type="button" data-hl-color="green" class="w-5 h-5 rounded bg-emerald-400 hover:scale-110 border border-emerald-700 transition cursor-pointer" title="Evidenzia in Verde (Alibi / Dato Confermato)"></button>
+    <button type="button" data-hl-color="blue" class="w-5 h-5 rounded bg-sky-400 hover:scale-110 border border-sky-700 transition cursor-pointer" title="Evidenzia in Blu (Orario / Timeline)"></button>
+    <div class="h-4 w-px bg-stone-700 mx-0.5"></div>
+    <button id="btn-sel-copy" type="button" class="px-2 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-100 border border-stone-600 text-[11px] font-semibold transition cursor-pointer" title="Copia testo selezionato negli appunti">
+      📋 Copia
+    </button>
+    <button id="btn-sel-to-note" type="button" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 text-[11px] font-semibold transition cursor-pointer" title="Incolla il frammento selezionato direttamente nel Post-it della carta">
+      📝 +Post-it
+    </button>
+    <button id="btn-sel-to-timeline" type="button" class="px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/35 text-sky-300 border border-sky-500/50 text-[11px] font-semibold transition cursor-pointer" title="Aggiungi la selezione come pallino sulla Timeline superiore collegando questa carta">
+      ⏱️ +Timeline
+    </button>
+    <button id="btn-sel-clear-hl" type="button" class="px-1.5 py-0.5 rounded bg-stone-900 hover:bg-red-950 text-stone-400 hover:text-red-300 border border-stone-700 text-[11px] transition cursor-pointer" title="Rimuovi evidenziazioni da questa carta">
+      🧽
+    </button>
+  </div>
+
+  <!-- =====================================================================
+       BOTTOM-RIGHT PHYSICAL DECK WIDGET
+       ===================================================================== -->
+  <aside class="fixed bottom-3 right-2 sm:bottom-4 sm:right-4 z-30 w-44 sm:w-64 bg-stone-950/95 backdrop-blur-md border border-stone-800 rounded-xl p-2 sm:p-3.5 shadow-2xl">
+    <div class="flex items-center justify-between gap-2 mb-1.5 sm:mb-2">
+      <div class="flex items-center gap-2">
+        <div id="deck-visual-stack" class="hidden sm:flex w-8 h-10 rounded bg-amber-900/60 border border-amber-500/70 items-center justify-center text-xs font-mono-tech font-bold text-amber-300 deck-stack-card shrink-0">
+          🗂️
+        </div>
+        <div>
+          <div class="hidden sm:block text-[10px] font-mono-tech uppercase tracking-wider text-stone-400">Mazzo Indizi Sequenziale</div>
+          <div id="deck-count-text" class="text-[11px] sm:text-xs font-extrabold text-stone-100">Carte pescate: 1 / 12</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="w-full h-1 sm:h-1.5 bg-stone-800 rounded-full overflow-hidden mb-1.5 sm:mb-2.5">
+      <div id="deck-progress-bar" class="h-full bg-amber-500 transition-all duration-300" style="width: 8%;"></div>
+    </div>
+
+    <button id="btn-draw-deck" type="button" class="w-full py-1.5 sm:py-2 px-2 sm:px-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold rounded-md text-[11px] sm:text-xs shadow-lg transition flex items-center justify-center gap-1 cursor-pointer">
+      Pesca Prossima Carta (#02)
+    </button>
+  </aside>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-16 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- =====================================================================
+       MODAL 1: INSPECT / ZOOM CARD (HIGH-RES EVIDENCE VIEWER)
+       ===================================================================== -->
+  <div id="inspect-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-stone-950 border border-stone-700 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-5 py-3.5 bg-stone-900 border-b border-stone-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-amber-400 font-mono-tech text-xs font-bold uppercase tracking-widest">🔍 ISPEZIONE AD ALTA RISOLUZIONE DEL REPERTO</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-inspect-prev" type="button" class="px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded text-xs font-mono-tech border border-stone-700 cursor-pointer" title="Carta precedente già pescata">← Prec</button>
+          <button id="btn-inspect-next" type="button" class="px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded text-xs font-mono-tech border border-stone-700 cursor-pointer" title="Carta successiva già pescata">Succ →</button>
+          <button id="btn-inspect-draw-next" type="button" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold rounded text-xs shadow transition cursor-pointer" title="Pesca e ispeziona subito la prossima carta del mazzo">🃏 Pesca Prossima</button>
+          <button type="button" data-close-modal="inspect-modal" class="ml-1 px-2.5 py-1 bg-stone-800 hover:bg-red-700 text-stone-200 hover:text-white rounded text-xs font-bold cursor-pointer">✕ Chiudi (ESC)</button>
+        </div>
+      </div>
+      <div id="inspect-modal-body" class="p-6 overflow-y-auto evidence-scroll"></div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 2: CASE DOSSIER & SUSPECTS BRIEFING
+       ===================================================================== -->
+  <div id="dossier-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-stone-950 border border-stone-700 rounded-xl max-w-3xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-5 py-3.5 bg-stone-900 border-b border-stone-800 flex items-center justify-between">
+        <span class="text-amber-400 font-mono-tech text-xs font-bold uppercase tracking-widest">📁 FASCICOLO DEL CASO: VITTIMA &amp; PROFILI SOSPETTATI</span>
+        <button type="button" data-close-modal="dossier-modal" class="px-2.5 py-1 bg-stone-800 hover:bg-red-700 text-stone-200 hover:text-white rounded text-xs font-bold cursor-pointer">✕ Chiudi</button>
+      </div>
+      <div id="dossier-modal-body" class="p-6 overflow-y-auto evidence-scroll"></div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 3: SOLVE THE CASE (VERDETTO FINALE)
+       ===================================================================== -->
+  <div id="solve-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-stone-950 border-2 border-amber-500/60 rounded-xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-5 py-3.5 bg-stone-900 border-b border-stone-800 flex items-center justify-between">
+        <div>
+          <span class="text-amber-400 font-mono-tech text-xs font-bold uppercase tracking-widest">⚖️ DEPOSITO DEL VERDETTO INVESTIGATIVO FINALE</span>
+          <p class="text-[11px] text-stone-400">Nessun suggerimento durante l'indagine. Il punteggio e la ricostruzione forense vengono svelati solo alla consegna.</p>
+        </div>
+        <button type="button" data-close-modal="solve-modal" class="px-2.5 py-1 bg-stone-800 hover:bg-red-700 text-stone-200 hover:text-white rounded text-xs font-bold cursor-pointer">✕ Torna alla Lavagna</button>
+      </div>
+      <div id="solve-modal-body" class="p-6 overflow-y-auto evidence-scroll"></div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 4: RED STRING LABEL EDITOR
+       ===================================================================== -->
+  <div id="string-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-stone-900 border border-red-500/70 rounded-xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-mono-tech font-bold uppercase tracking-wider text-red-400">🧶 Etichetta sul Filo Rosso</span>
+        <button id="btn-cancel-string" type="button" class="text-stone-400 hover:text-white text-xs font-bold cursor-pointer">✕</button>
+      </div>
+
+      <input id="string-label-input" type="text" placeholder="Es: Contraddizione orario / Stesso gruppo 0- / Alibi falso..."
+        class="w-full bg-stone-950 border border-stone-700 rounded-md px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-red-500 mb-3" />
+
+      <div class="mb-4">
+        <div class="text-[10px] font-mono-tech text-stone-400 uppercase mb-1.5">Etichette Rapide:</div>
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" data-string-preset="Contraddizione Orario" class="px-2 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-[10px] text-stone-300 border border-stone-700 cursor-pointer">Contraddizione Orario</button>
+          <button type="button" data-string-preset="Alibi Smentito" class="px-2 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-[10px] text-stone-300 border border-stone-700 cursor-pointer">Alibi Smentito</button>
+          <button type="button" data-string-preset="Match DNA / Sangue" class="px-2 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-[10px] text-stone-300 border border-stone-700 cursor-pointer">Match DNA / Sangue</button>
+          <button type="button" data-string-preset="Arma del Delitto" class="px-2 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-[10px] text-stone-300 border border-stone-700 cursor-pointer">Arma del Delitto</button>
+          <button type="button" data-string-preset="Movente" class="px-2 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-[10px] text-stone-300 border border-stone-700 cursor-pointer">Movente</button>
+          <button type="button" data-string-preset="Depistaggio" class="px-2 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-[10px] text-stone-300 border border-stone-700 cursor-pointer">Depistaggio</button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 pt-2 border-t border-stone-800">
+        <button id="btn-delete-string" type="button" class="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-200 border border-red-800 rounded text-xs font-bold cursor-pointer">
+          ✂️ Taglia Filo
+        </button>
+        <button id="btn-save-string" type="button" class="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded text-xs font-extrabold cursor-pointer">
+          Salva Etichetta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL 5: TIMELINE EVENT EDITOR (PALLINO SULLA LINEA DEL TEMPO)
+       ===================================================================== -->
+  <div id="timeline-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-stone-900 border border-amber-500/70 rounded-xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <span id="timeline-modal-title" class="text-xs font-mono-tech font-bold uppercase tracking-wider text-amber-400">⏱️ Evento sulla Linea del Tempo</span>
+        <button id="btn-cancel-timeline" type="button" class="text-stone-400 hover:text-white text-xs font-bold cursor-pointer">✕</button>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <div class="grid grid-cols-12 gap-2.5">
+          <div class="col-span-5">
+            <label class="block text-[10px] font-mono-tech text-stone-400 uppercase mb-1">Orario / Data *</label>
+            <input id="tl-time-input" type="text" placeholder="Es: 21:51 o 12 Nov 18:40"
+              class="w-full bg-stone-950 border border-stone-700 rounded-md px-2.5 py-2 text-xs font-mono-tech font-bold text-amber-300 focus:outline-none focus:border-amber-500" />
+          </div>
+          <div class="col-span-7">
+            <label class="block text-[10px] font-mono-tech text-stone-400 uppercase mb-1">Collega Carta (Opzionale)</label>
+            <select id="tl-card-select" class="w-full bg-stone-950 border border-stone-700 rounded-md px-2.5 py-2 text-xs text-stone-200 focus:outline-none focus:border-amber-500">
+              <option value="">— Nessuna carta collegata —</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono-tech text-stone-400 uppercase mb-1">Descrizione Evento *</label>
+          <input id="tl-label-input" type="text" placeholder="Es: Arresto cardiaco (Apple Watch) / Apertura serra #9901..."
+            class="w-full bg-stone-950 border border-stone-700 rounded-md px-3 py-2 text-xs text-stone-100 focus:outline-none focus:border-amber-500" />
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-mono-tech text-stone-400 uppercase mb-1.5">Colore Pallino:</label>
+          <div id="tl-color-picker" class="flex items-center gap-2">
+            <button type="button" data-tl-color="amber" class="px-2.5 py-1 rounded text-[10px] font-bold bg-amber-500 text-stone-950 border-2 border-white cursor-pointer">🟡 Evento / Orario</button>
+            <button type="button" data-tl-color="red" class="px-2.5 py-1 rounded text-[10px] font-bold bg-red-600 text-white border-2 border-transparent opacity-75 hover:opacity-100 cursor-pointer">🔴 Critico / Delitto</button>
+            <button type="button" data-tl-color="blue" class="px-2.5 py-1 rounded text-[10px] font-bold bg-sky-600 text-white border-2 border-transparent opacity-75 hover:opacity-100 cursor-pointer">🔵 Alibi / Testimone</button>
+            <button type="button" data-tl-color="green" class="px-2.5 py-1 rounded text-[10px] font-bold bg-emerald-600 text-white border-2 border-transparent opacity-75 hover:opacity-100 cursor-pointer">🟢 Log / Verificato</button>
+          </div>
+        </div>
+
+        <!-- Quick jump to linked card if editing an existing dot with a linked card -->
+        <div id="tl-linked-actions" class="hidden bg-stone-950/80 border border-stone-800 rounded-lg p-2.5 flex items-center justify-between gap-2">
+          <span id="tl-linked-card-name" class="text-[11px] font-mono-tech text-amber-300 truncate">Carta collegata</span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-tl-focus-card" type="button" class="px-2 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 rounded text-[10px] font-bold cursor-pointer">
+              🎯 Centra sulla Lavagna
+            </button>
+            <button id="btn-tl-inspect-card" type="button" class="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[10px] font-bold cursor-pointer">
+              🔍 Apri Carta
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 pt-3 mt-4 border-t border-stone-800">
+        <button id="btn-delete-timeline" type="button" class="hidden px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-200 border border-red-800 rounded text-xs font-bold cursor-pointer">
+          🗑️ Rimuovi Pallino
+        </button>
+        <div class="flex items-center gap-2 ml-auto">
+          <button id="btn-save-timeline" type="button" class="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded text-xs font-extrabold cursor-pointer">
+            Salva sulla Timeline
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="./js/svg-illustrations.js"></script>
+  <script src="./js/scenarios.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
