@@ -419,6 +419,288 @@ window.ProfilerScenarios = {
           }
         ]
       }
+    },
+    'caso-718-fenice': {
+      file: './scenario-fenice.json',
+      data: {
+        "metadata": {
+          "id": "caso-718-fenice",
+          "caseNumber": "FASCICOLO #718-VE",
+          "title": "Requiem per l'Automa d'Oro — Delitto a Venezia",
+          "date": "21-22 Novembre 2026",
+          "location": "Teatro San Samuele, Venezia",
+          "description": "Alle ore 23:15 del 21 Novembre, al termine della prima dell'opera 'Orfeo', il celebre direttore d'orchestra Maestro Aurelio Contarini viene trovato senza vita nel suo Camerino Blindato n. 1, chiuso dall'interno col chiavistello. Ha uno stiletto in vetro di Murano conficcato nel petto, una coppa di Champagne rovesciata sul tavolo e il suo prezioso Automa Carillon del 1768 accanto a sé. Cinque sospettati, tre colpi di scena e un enigma di camera chiusa.",
+          "victim": {
+            "name": "Maestro Aurelio Contarini",
+            "age": 64,
+            "role": "Direttore d'Orchestra & Collezionista di Automi del '700",
+            "bloodType": "A Negativo (A-)",
+            "notes": "Destrorso. Portatore di Holter cardiaco medicale continuo. Rigorosamente astemio nelle sere di concerto. Abitudine rituale: durante ogni intermezzo del II Atto (ore 22:10-22:15) rientrava in camerino per caricare con 3 giri di chiave il suo Automa Carillon del 1768 ('L'Orfeo d'Oro', assicurato per 1,5 milioni di euro)."
+          },
+          "suspects": [
+            {
+              "id": "f1",
+              "name": "Flavia De Santis",
+              "age": 36,
+              "role": "Prima Soprano Protagonista",
+              "traits": "Destrorsa • Gruppo 0+ • Usa rossetto 'Rouge Carmine #14' • In cura con Digitalina",
+              "notes": "Il Maestro aveva minacciato di rimuoverla dal cast della tournée europea dopo le prove generali."
+            },
+            {
+              "id": "f2",
+              "name": "Davide Moretti",
+              "age": 41,
+              "role": "Primo Violino di Spalla",
+              "traits": "Mancino • Gruppo B Negativo (B-) • Corporatura snella • Usa pece di pino (colofonia)",
+              "notes": "Sotto ricatto del Maestro per aver falsificato la perizia di un violino Guadagnini; fidanzato segreto di Valeria Contarini."
+            },
+            {
+              "id": "f3",
+              "name": "Ing. Ettore Marin",
+              "age": 58,
+              "role": "Maestro Orologiaio & Curatore degli Automi",
+              "traits": "Destrorso • Gruppo A+ • Usa olio sintetico Moebius 9010 • Appassionato di tassidermia marina",
+              "notes": "Unico tecnico autorizzato a smontare e revisionare l'Automa del 1768 del Maestro Contarini."
+            },
+            {
+              "id": "f4",
+              "name": "Valeria Contarini",
+              "age": 31,
+              "role": "Figlia del Maestro & Clavicembalista",
+              "traits": "Mancina • Gruppo AB+ • Custodisce fili di seta e chiavi d'accordatura per arpa e clavicembalo",
+              "notes": "In lite col padre perché contraria alla sua relazione segreta con il violinista Davide Moretti."
+            },
+            {
+              "id": "f5",
+              "name": "Lorenzo Grimaldi",
+              "age": 49,
+              "role": "Sovrintendente Finanziario del Teatro",
+              "traits": "Destrorso • Gruppo 0- • Indossa gemelli d'onice • Fumatore di sigari Toscano",
+              "notes": "Indagato internamente dal Maestro per un buco di bilancio di 180.000 € nei fondi della fondazione lirica."
+            }
+          ]
+        },
+        "cards": [
+          {
+            "id": "fen-01",
+            "number": "#01",
+            "title": "Sopralluogo Camerino Blindato n. 1",
+            "category": "Luogo",
+            "timestamp": "21 Nov • Ore 23:20",
+            "image": "svg:fenice-dressing-room",
+            "rawText": "• Porta del Camerino n. 1 sfondata dai pompieri alle 23:15: il chiavistello interno in ottone era regolarmente inserito.\n• Il Maestro Contarini siede riverso davanti alla specchiera con uno stiletto di scena in vetro di Murano conficcato nell'emitorace sinistro.\n• Sul tavolo: una coppa di Champagne Rosé con bordo dorato rovesciata e l'Automa del 1768 ('L'Orfeo d'Oro') con la chiavetta di carica inserita.\n• Nessuna finestra presente nel camerino."
+          },
+          {
+            "id": "fen-02",
+            "number": "#02",
+            "title": "Ispezione Porta, Chiavistello & Condotto",
+            "category": "Luogo",
+            "timestamp": "21 Nov • Ore 23:40",
+            "image": "svg:fenice-locked-door",
+            "rawText": "• Chiavistello interno della porta: presenta micro-solchi circolari freschi sul pomello e un frammento spezzato di filo di seta dorata ad alta tenacità (lungo 4 cm) incastrato nella fessura sotto la soglia verso il corridoio esterno.\n• Parete nord (dietro il paravento): griglia del condotto di risonanza acustica (45x45 cm) con le 4 viti allentate; sul bordo inferiore tracce di polvere ambrata resinosa."
+          },
+          {
+            "id": "fen-03",
+            "number": "#03",
+            "title": "Registro di Palcoscenico & Cronologia",
+            "category": "Documento",
+            "timestamp": "21 Nov • Ore 23:55",
+            "image": "svg:fenice-stage-plan",
+            "rawText": "• Ore 21:30 - 22:00: Intervallo tra Atto I e Atto II.\n• Ore 22:05: Inizio Atto II diretto dal Maestro Contarini.\n• Ore 22:10 - 22:25: 'Intermezzo Pastorale' diretto dal Vice-Direttore mentre il Maestro rientra da solo nel Camerino n. 1.\n• Ore 22:26: Il Maestro non torna sul podio; il Vice-Direttore prosegue fino al termine dell'opera (ore 23:10).\n• Ore 22:10 - 22:25: Tutti i 5 sospettati sono visti in sala o sul palco da decine di testimoni."
+          },
+          {
+            "id": "fen-04",
+            "number": "#04",
+            "title": "Deposizione: Flavia De Santis (Soprano)",
+            "category": "Deposizione",
+            "timestamp": "22 Nov • Ore 00:15",
+            "image": "svg:fenice-soprano",
+            "rawText": "«Sono entrata nel camerino di Aurelio alle 21:35 durante l'intervallo per brindare alla prima con due coppe di Champagne Rosé. Lui era nervoso e mi ha cacciata dicendo che avrebbe bevuto più tardi.\nDalle 22:05 alle 22:45 ero ininterrottamente sul palcoscenico a cantare il secondo atto davanti a 600 spettatori.\nSoffro di aritmia lieve e porto in borsetta gocce di Digitalina.»"
+          },
+          {
+            "id": "fen-05",
+            "number": "#05",
+            "title": "Analisi Chimica: Coppa & Stiletto di Vetro",
+            "category": "Forense",
+            "timestamp": "22 Nov • Ore 00:45",
+            "image": "svg:fenice-champagne-dagger",
+            "rawText": "• Coppa di Champagne col bordo dorato (rovesciata sul tappeto): contiene 120 mg di Digitalina purissima (dose letale). Sul bordo esterno: impronta labiale di rossetto 'Rouge Carmine #14', ma NESSUNA traccia di saliva o DNA della vittima.\n• Stiletto di scena in vetro di Murano (estratto dal petto della vittima): sulla guardia dell'impugnatura viene isolata una goccia di sangue fresco gruppo B Negativo (B-) e granuli di colofonia (pece per archetti da violino)."
+          },
+          {
+            "id": "fen-06",
+            "number": "#06",
+            "title": "Autopsia & Tracciato Holter Cardiaco",
+            "category": "Forense",
+            "timestamp": "22 Nov • Ore 01:20",
+            "image": "svg:fenice-autopsy",
+            "rawText": "• COLPO DI SCENA 1 — Stomaco vittima: 0,0 ml di Champagne e 0,0 mg di Digitalina.\n• COLPO DI SCENA 2 — Ferita al petto da stiletto di Murano: margini completamente ESANGUI (assenza totale di reazione vitale). La pugnalata è stata inflitta POST-MORTEM su un cadavere già morto da oltre 35 minuti!\n• VERA CAUSA MORTE: micro-puntura profonda 1,8 mm sul polpastrello dell'indice DESTRO con tracce di Tetrodotossina pura e olio sintetico Moebius 9010.\n• Holter cardiaco vittima: arresto cardiaco fulminante registrato alle ore 22:14:18."
+          },
+          {
+            "id": "fen-07",
+            "number": "#07",
+            "title": "Deposizione: Davide Moretti (1° Violino)",
+            "category": "Deposizione",
+            "timestamp": "22 Nov • Ore 01:40",
+            "image": "svg:fenice-violinist",
+            "rawText": "«Ho suonato in buca d'orchestra fino alle 22:47. Poi ho avuto un crampo al braccio e sono sceso nello spogliatoio fino alle 23:02. Non sono mai entrato nel camerino del Maestro!»\n• Nota medico legale: il soggetto (Gruppo B Negativo) presenta una ferita lacera fresca di 12 mm sul polso sinistro con un micro-frammento di vetro azzurro di Murano."
+          },
+          {
+            "id": "fen-08",
+            "number": "#08",
+            "title": "Deposizione: Ing. Ettore Marin (Orologiaio)",
+            "category": "Deposizione",
+            "timestamp": "22 Nov • Ore 02:00",
+            "image": "svg:fenice-horologist",
+            "rawText": "«Alle 19:30, prima dello spettacolo, ho consegnato l'Automa del 1768 nel camerino del Maestro dopo aver lubrificato la molla di carica.\nDalle 21:55 fino alle 23:10 ero seduto in prima fila di platea (poltrona A-14) accanto al critico del Gazzettino: non mi sono mosso di un centimetro quando il Maestro è morto alle 22:14!»"
+          },
+          {
+            "id": "fen-09",
+            "number": "#09",
+            "title": "Deposizione: Valeria Contarini (Figlia)",
+            "category": "Deposizione",
+            "timestamp": "22 Nov • Ore 02:20",
+            "image": "svg:fenice-daughter",
+            "rawText": "«Alle 22:14 stavo suonando il basso continuo al clavicembalo in orchestra. Alle 22:28, finita la mia parte, sono salita al camerino di papà: la porta era socchiusa di pochi millimetri e l'ho visto riverso e immobile.\nHo avuto il terrore che Davide fosse già passato di lì dopo le minacce di papà: così ho tirato il chiavistello interno dall'esterno usando un filo di seta da arpa fatto passare sotto la porta, che mi si è spezzato all'ultimo istante.»"
+          },
+          {
+            "id": "fen-10",
+            "number": "#10",
+            "title": "Alibi Sovrintendente & Orologio Corridoio",
+            "category": "Documento",
+            "timestamp": "22 Nov • Ore 02:40",
+            "image": "svg:digital-logs",
+            "rawText": "• Lorenzo Grimaldi (Sovrintendente): ripreso dalle telecamere del Palco Reale in compagnia del Sindaco ininterrottamente dalle 21:48 alle 23:12.\n• Ammette di aver spostato avanti di 15 minuti il pendolo del corridoio alle 21:10 solo per giustificare un ritardo alla riunione sindacale.\n• Sulla cassa del pendolo: cenere di sigaro Toscano, estranea al camerino del Maestro."
+          },
+          {
+            "id": "fen-11",
+            "number": "#11",
+            "title": "Rilievi sul Tentato Avvelenamento (21:35)",
+            "category": "Forense",
+            "timestamp": "22 Nov • Ore 03:10",
+            "image": "svg:toxicology-lab",
+            "rawText": "• Nel cestino del camerino di Flavia De Santis: flacone vuoto di 'Digitalina 2%' con impronte della soprano.\n• Ricostruzione: alle 21:35 Flavia aveva versato la Digitalina nella coppa del Maestro e poggiato le labbra sulla propria coppa per simulare il brindisi, ma nella fretta ha scambiato i calici o il Maestro, astemio prima di dirigere, ha urtato la coppa alle 21:36 senza berne nemmeno una goccia."
+          },
+          {
+            "id": "fen-12",
+            "number": "#12",
+            "title": "Rilievi Condotto Acustico & Custodia Violino",
+            "category": "Forense",
+            "timestamp": "22 Nov • Ore 03:35",
+            "image": "svg:fenice-locked-door",
+            "rawText": "• Condotto di risonanza acustica (collegato allo spogliatoio orchestrali): rilevate impronte palmari di Davide Moretti e polvere di colofonia.\n• Nella custodia del violino di Moretti: rinvenuta la lettera di denuncia del Maestro macchiata di sangue B- e un cacciavite a croce.\n• Messo alle strette, Moretti confessa: «Sono entrato dal condotto alle 22:52 perché la porta era bloccata col chiavistello. Nel buio ho creduto che Aurelio dormisse sulla sedia: in preda al panico l'ho colpito col pugnale di scena di Murano, che si è spezzato ferendomi il polso, ho preso la lettera e sono fuggito dal condotto alle 22:58!»"
+          },
+          {
+            "id": "fen-13",
+            "number": "#13",
+            "title": "Verifica Tecnica Camera Chiusa (Ore 22:30)",
+            "category": "Forense",
+            "timestamp": "22 Nov • Ore 04:00",
+            "image": "svg:fenice-daughter",
+            "rawText": "• Nella borsa del clavicembalo di Valeria Contarini viene repertato un rocchetto di filo di seta dorata identico per torsione e lotto chimico al frammento di 4 cm rimasto sotto la porta del Camerino n. 1.\n• Questo spiega il paradosso della camera chiusa: alle 22:14 la porta NON era chiusa a chiave; è stata bloccata dall'esterno da Valeria alle 22:30 col trucco del filo, costringendo poi Moretti a passare dal condotto acustico alle 22:52."
+          },
+          {
+            "id": "fen-14",
+            "number": "#14",
+            "title": "Perizia Meccanica sull'Automa del 1768",
+            "category": "Forense",
+            "timestamp": "22 Nov • Ore 04:30",
+            "image": "svg:fenice-automaton",
+            "rawText": "• COLPO DI SCENA 3 — L'ispezione microscopica della chiavetta d'oro di carica dell'Automa rivela una modifica micromeccanica letale:\n• All'interno dell'albero cavo della chiavetta è stato fresato un alloggiamento con molla a scatto calibrata sul 3° giro di carica.\n• Al terzo giro completo (eseguito dal Maestro alle 22:13), un micro-ago chirurgico da 0,2 mm intriso di Tetrodotossina e olio Moebius 9010 scatta fuori dal foro dell'impugnatura, pungendo il polpastrello dell'indice destro di chi gira la chiave!"
+          },
+          {
+            "id": "fen-15",
+            "number": "#15",
+            "title": "Perquisizione Laboratorio Ing. Ettore Marin",
+            "category": "Documento",
+            "timestamp": "22 Nov • Ore 05:10",
+            "image": "svg:vault-registry",
+            "rawText": "• Nel laboratorio di orologeria dell'Ing. Ettore Marin (Cannaregio):\n• Sul tornio di precisione: trucioli microscopici di lega aurea 18kt identici alla chiavetta forata dell'Automa e flacone di lubrificante 'Moebius 9010'.\n• Nel frigorifero blindato per tassidermia ittiologica: fiala aperta di Tetrodotossina anidra estratta da Tetraodontidae (pesce palla) e confezione di micro-aghi da agopuntura calibro 0,20 mm."
+          },
+          {
+            "id": "fen-16",
+            "number": "#16",
+            "title": "Perizia XRF sull'Automa & Conto di Ginevra",
+            "category": "Documento",
+            "timestamp": "22 Nov • Ore 05:45",
+            "image": "svg:fenice-xrf-report",
+            "rawText": "• L'analisi spettrometrica XRF sull'Automa 'L'Orfeo d'Oro' svela il movente: il movimento interno NON è quello originale del 1768, ma una replica moderna in ottone al piombo lavorata a controllo numerico (CNC) nel 2026!\n• Email sul telefono del Maestro Contarini (inviata ore 18:50 a Marin): «Ettore, il suono del carillon è cambiato. Domani mattina alle 09:00 i periti assicurativi eseguiranno la scansione metallurgica XRF sull'Automa».\n• Rogatoria bancaria: Ettore Marin aveva venduto il vero meccanismo del 1768 a un collezionista di Ginevra il 4 Novembre per 1.200.000 CHF."
+          }
+        ],
+        "solution": [
+          {
+            "id": "fq1",
+            "question": "1. Chi è il vero assassino che ha causato la morte del Maestro Aurelio Contarini?",
+            "options": [
+              "Flavia De Santis (Prima Soprano)",
+              "Davide Moretti (Primo Violino)",
+              "Ing. Ettore Marin (Maestro Orologiaio)",
+              "Valeria Contarini (Figlia del Maestro)"
+            ],
+            "correctOptionIndex": 2,
+            "explanation": "L'Ing. Ettore Marin ha ucciso il Maestro a distanza senza bisogno di trovarsi nel camerino alle 22:14: alle 19:30 ha installato nella chiavetta di carica dell'Automa un micro-ago a scatto intriso di Tetrodotossina (Carte #06, #08, #14, #15), sapendo che il Maestro caricava puntualmente il carillon con 3 giri di chiave durante l'intermezzo delle 22:12."
+          },
+          {
+            "id": "fq2",
+            "question": "2. Qual è stata la vera causa della morte e a che ora esatta è deceduto il Maestro?",
+            "options": [
+              "Trauma cardiaco da stiletto in vetro di Murano alle ore 22:52",
+              "Avvelenamento da Digitalina nello Champagne Rosé alle ore 21:35",
+              "Inoculazione di Tetrodotossina sul polpastrello destro tramite il micro-ago nella chiavetta dell'Automa, con arresto cardiaco alle 22:14",
+              "Asfissia meccanica provocata col filo di seta dorata alle ore 22:30"
+            ],
+            "correctOptionIndex": 2,
+            "explanation": "L'autopsia e l'Holter cardiaco (Carta #06) dimostrano che il Maestro è morto alle 22:14:18 per Tetrodotossina inoculata nel polpastrello dell'indice destro dal meccanismo a scatto nascosto nella chiavetta dell'Automa (Carta #14). Lo stomaco era privo di Champagne/Digitalina e la ferita al petto col pugnale di vetro era esangue (post-mortem)."
+          },
+          {
+            "id": "fq3",
+            "question": "3. Perché il cadavere aveva uno stiletto di Murano conficcato nel petto se era già morto avvelenato?",
+            "options": [
+              "È stato Ettore Marin alle 19:30 prima dell'inizio dell'opera",
+              "Davide Moretti si è introdotto dal condotto acustico alle 22:52 per rubare la lettera di denuncia e, nel buio, ha colpito il corpo già morto da 38 minuti",
+              "Flavia De Santis lo ha colpito alle 21:35 dopo che il Maestro ha rifiutato lo Champagne",
+              "Il Maestro si è ferito da solo cadendo sullo specchio durante l'arresto cardiaco"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "Alle 22:52 il primo violino Davide Moretti è entrato dal condotto acustico (trovando la porta chiusa col chiavistello) per sottrarre la lettera di denuncia. Vedendo la sagoma del Maestro nel buio e credendolo vivo, lo ha colpito col pugnale di scena in vetro di Murano su un corpo già deceduto alle 22:14, ferendosi il polso e lasciando sangue B- e pece da violino (Carte #05, #06, #07, #12)."
+          },
+          {
+            "id": "fq4",
+            "question": "4. Come si spiega l'enigma della 'camera chiusa' (chiavistello interno bloccato) se sia l'assassino sia gli altri sospettati erano fuori alle 23:15?",
+            "options": [
+              "Il Maestro si è chiuso dentro prima di caricare l'Automa e nessuno è più entrato",
+              "Ettore Marin aveva costruito un chiavistello magnetico telecomandato",
+              "Valeria Contarini ha bloccato il chiavistello dall'esterno alle 22:30 con un filo di seta da arpa fatto passare sotto la porta, mentre Moretti alle 22:52 è entrato e uscito dal condotto acustico",
+              "I pompieri hanno fatto scattare il chiavistello per errore sfondando la porta"
+            ],
+            "correctOptionIndex": 2,
+            "explanation": "Valeria Contarini, trovando il padre morto alle 22:28 e temendo che venisse incolpato il fidanzato Davide Moretti, ha chiuso il chiavistello dall'esterno usando un filo di seta dorata da arpa fatto passare sotto la soglia (dove se n'è spezzato un frammento di 4 cm, Carte #02, #09, #13). Venti minuti dopo (22:52), Moretti è passato attraverso la griglia del condotto acustico."
+          },
+          {
+            "id": "fq5",
+            "question": "5. Chi aveva avvelenato la coppa di Champagne con la Digitalina e perché non ha ucciso il Maestro?",
+            "options": [
+              "Lorenzo Grimaldi, ma la coppa è evaporata per il caldo del camerino",
+              "Flavia De Santis alle 21:35 per evitare l'esclusione dalla tournée, ma il Maestro (astemio prima di dirigere) non ne ha bevuto nemmeno un sorso",
+              "Valeria Contarini per ereditare il patrimonio paterno",
+              "Ettore Marin come piano di riserva nel caso l'Automa non funzionasse"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "La soprano Flavia De Santis ha versato 120 mg della propria Digitalina nella coppa con bordo dorato alle 21:35 (Carte #04, #05, #11), ma il Maestro non beveva mai alcolici prima di dirigere e lo stomaco è risultato completamente vuoto (0,0 ml di Champagne e 0,0 mg di Digitalina, Carta #06)."
+          },
+          {
+            "id": "fq6",
+            "question": "6. Qual era il vero movente dell'Ing. Ettore Marin per assassinare il Maestro proprio la sera del 21 Novembre?",
+            "options": [
+              "Un debito di gioco contratto con il Sovrintendente Grimaldi",
+              "Impedire la perizia spettrometrica XRF fissata per l'indomani mattina, che avrebbe scoperto il furto del meccanismo originale del 1768 venduto a Ginevra per 1.200.000 CHF",
+              "Vendicarsi per il licenziamento di suo figlio dall'orchestra del teatro",
+              "Impossessarsi della partitura autografa dell'Orfeo custodita nel camerino"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "Marin aveva sostituito il meccanismo originale settecentesco dell'Automa con una copia moderna CNC e venduto l'originale a Ginevra per 1.200.000 CHF. Alle 18:50 del 21 Novembre il Maestro gli aveva comunicato che l'indomani mattina alle 09:00 i periti avrebbero eseguito la scansione XRF sull'Automa (Carta #16)."
+          }
+        ]
+      }
     }
   },
 

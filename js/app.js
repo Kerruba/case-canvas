@@ -221,7 +221,11 @@
     cacheDom();
     bindGlobalEvents();
 
-    const lastScenarioId = localStorage.getItem(STORAGE_PREFIX + 'active_scenario') || 'caso-409-morosini';
+    let lastScenarioId = localStorage.getItem(STORAGE_PREFIX + 'active_scenario') || 'caso-718-fenice';
+    if (!localStorage.getItem(STORAGE_PREFIX + 'introduced_718')) {
+      localStorage.setItem(STORAGE_PREFIX + 'introduced_718', '1');
+      lastScenarioId = 'caso-718-fenice';
+    }
     await loadScenarioById(lastScenarioId);
   }
 
