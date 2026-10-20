@@ -414,34 +414,17 @@
   }
 
   function updateWorldTransform() {
-    dom.world.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.scale})`;
-    const gridPx = Math.max(10, 24 * state.scale);
-    dom.viewport.style.backgroundPosition = `0 0, ${state.panX}px ${state.panY}px`;
-    dom.viewport.style.backgroundSize = `100% 100%, ${gridPx}px ${gridPx}px`;
-    if (dom.zoomLevelText) {
-      dom.zoomLevelText.textContent = `${Math.round(state.scale * 100)}%`;
-    }
+    // No 2D transform needed in Structured Grid mode
   }
 
-  function zoomAtPoint(newScale, clientX, clientY) {
-    const clamped = Math.min(2.2, Math.max(0.35, newScale));
-    const rect = dom.viewport ? dom.viewport.getBoundingClientRect() : { left: 0, top: 0 };
-    const worldBefore = screenToWorld(clientX, clientY);
-    state.scale = clamped;
-    state.panX = (clientX - rect.left) - worldBefore.x * state.scale;
-    state.panY = (clientY - rect.top) - worldBefore.y * state.scale;
-    updateWorldTransform();
-    hideTextSelectionToolbar();
-    closeCardGroupPopover();
-    saveState();
+  function zoomAtPoint() {
+    // No zoom needed in Structured Grid mode
   }
 
   function centerViewOnBoard() {
-    state.scale = getResponsiveDefaultScale();
-    state.panX = window.innerWidth < 640 ? 16 : 50;
-    state.panY = 20;
-    updateWorldTransform();
-    saveState();
+    if (dom.viewport) {
+      dom.viewport.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   function focusCardOnBoard(cardId) {
@@ -451,28 +434,17 @@
       return;
     }
 
-    const dims = getCardDimensions(cs);
-    const cardCenterX = cs.x + dims.width / 2;
-    const cardCenterY = cs.y + dims.height / 2;
-    const rect = dom.viewport ? dom.viewport.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight };
-
-    state.panX = Math.round(rect.width / 2 - cardCenterX * state.scale);
-    state.panY = Math.round(rect.height / 2 - cardCenterY * state.scale);
-
     state.selectedCards.clear();
     state.selectedCards.add(cardId);
-    state.maxZIndex += 1;
-    cs.zIndex = state.maxZIndex;
 
-    updateWorldTransform();
     renderCards();
-    renderStrings();
     renderTimeline();
     updateMultiSelectToolbar();
     saveState();
 
     const domCard = document.getElementById(`card-${cardId}`);
     if (domCard) {
+      domCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
       domCard.classList.add('timeline-pulse');
       setTimeout(() => domCard.classList.remove('timeline-pulse'), 1900);
     }
@@ -566,8 +538,10 @@
     const sorted = [...state.timelineEvents].sort((a, b) => parseTimeSortKey(a.time) - parseTimeSortKey(b.time));
 
     dom.timelineNodesContainer.innerHTML = `
-      <!-- Horizontal Axis Line behind dots -->
-      <div class="absolute left-6 right-6 top-[29px] h-[2px] bg-gradient-to-r from-stone-700 via-amber-500/50 to-stone-700 pointer-events-none"></div>
+      <!-- Horizontal Axis Line behind dots (Tablet & Desktop >= 768px) -->
+      <div class="hidden md:block absolute left-6 right-6 top-[29px] h-[2px] bg-gradient-to-r from-stone-700 via-amber-500/50 to-stone-700 pointer-events-none"></div>
+      <!-- Vertical Axis Line behind dots (Smartphone < 768px) -->
+      <div class="md:hidden absolute left-[18px] top-3 bottom-3 w-[2px] bg-gradient-to-b from-stone-700 via-amber-500/60 to-stone-700 pointer-events-none"></div>
     `;
 
     sorted.forEach(ev => {
@@ -579,21 +553,46 @@
 
       const node = document.createElement('div');
       node.className = `timeline-node shrink-0 ${isCardSelected ? 'is-highlighted' : ''}`;
-      node.title = `${ev.time} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nClicca sul pallino per modificare • Clicca sul badge carta per centrarla`;
+      node.title = `${ev.time} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nClicca sul pallino per modificare • Clicca sul badge carta per raggiungerla`;
 
       node.innerHTML = `
-        <div class="font-mono-tech font-extrabold text-[10.5px] ${cStyle.timeText} leading-none mb-1.5 tracking-tight">
-          ${escapeHtml(ev.time)}
+        <!-- Desktop/Tablet Horizontal Node Layout (md:flex) -->
+        <div class="hidden md:flex flex-col items-center w-full">
+          <div class="font-mono-tech font-extrabold text-[10.5px] ${cStyle.timeText} leading-none mb-1.5 tracking-tight">
+            ${escapeHtml(ev.time)}
+          </div>
+          <div class="timeline-dot ${cStyle.dotBg}"></div>
+          <div class="mt-1.5 flex flex-col items-center max-w-[155px]">
+            <span class="text-[10px] font-medium text-stone-200 truncate w-full text-center leading-tight">
+              ${escapeHtml(ev.label)}
+            </span>
+            ${linkedCard ? `
+              <button type="button" data-jump-card="${linkedCard.id}"
+                class="mt-0.5 px-1.5 py-0.2 rounded bg-stone-900 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border ${cStyle.badgeBorder} font-mono-tech font-bold text-[9px] transition cursor-pointer"
+                title="Clicca per andare alla Carta ${escapeHtml(linkedCard.number)}">
+                🔗 ${escapeHtml(linkedCard.number)}
+              </button>
+            ` : ''}
+          </div>
         </div>
-        <div class="timeline-dot ${cStyle.dotBg}"></div>
-        <div class="mt-1.5 flex flex-col items-center max-w-[155px]">
-          <span class="text-[10px] font-medium text-stone-200 truncate w-full text-center leading-tight">
-            ${escapeHtml(ev.label)}
-          </span>
+
+        <!-- Smartphone Vertical Node Layout (< 768px) -->
+        <div class="flex md:hidden items-center justify-between gap-2.5 w-full pl-1">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="timeline-dot shrink-0 ${cStyle.dotBg}"></div>
+            <div class="min-w-0">
+              <div class="font-mono-tech font-extrabold text-[11px] ${cStyle.timeText} leading-tight">
+                ${escapeHtml(ev.time)}
+              </div>
+              <div class="text-xs font-medium text-stone-200 break-words leading-snug">
+                ${escapeHtml(ev.label)}
+              </div>
+            </div>
+          </div>
           ${linkedCard ? `
             <button type="button" data-jump-card="${linkedCard.id}"
-              class="mt-0.5 px-1.5 py-0.2 rounded bg-stone-900 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border ${cStyle.badgeBorder} font-mono-tech font-bold text-[9px] transition cursor-pointer"
-              title="Clicca per centrare la Carta ${escapeHtml(linkedCard.number)} sulla lavagna">
+              class="shrink-0 px-2 py-1 rounded bg-stone-900 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border ${cStyle.badgeBorder} font-mono-tech font-bold text-[10px] transition cursor-pointer"
+              title="Clicca per andare alla Carta ${escapeHtml(linkedCard.number)}">
               🔗 ${escapeHtml(linkedCard.number)}
             </button>
           ` : ''}
@@ -613,13 +612,12 @@
         });
       }
 
-      const jumpBtn = node.querySelector('[data-jump-card]');
-      if (jumpBtn) {
+      node.querySelectorAll('[data-jump-card]').forEach(jumpBtn => {
         jumpBtn.addEventListener('click', e => {
           e.stopPropagation();
           focusCardOnBoard(linkedCard.id);
         });
-      }
+      });
 
       node.addEventListener('click', () => {
         openTimelineModal({ editId: ev.id });
@@ -776,8 +774,7 @@
       }
 
       state.cardsState[cardObj.id] = {
-        x: spawnX,
-        y: spawnY,
+        groupId: null,
         note: '',
         important: false,
         archived: false,
@@ -967,15 +964,29 @@
   function findGroupContainingCard(cardId) {
     const cs = state.cardsState[cardId];
     if (!cs) return null;
-    return state.groups.find(g => isCardInsideGroup(cs, g)) || null;
+
+    if (cs.groupId !== undefined) {
+      if (!cs.groupId) return null;
+      return state.groups.find(g => g.id === cs.groupId) || null;
+    }
+
+    // Legacy coordinate fallback migration
+    if (typeof cs.x === 'number' && typeof cs.y === 'number') {
+      const legacyGroup = state.groups.find(g => isCardInsideGroup(cs, g)) || null;
+      cs.groupId = legacyGroup ? legacyGroup.id : null;
+      return legacyGroup;
+    }
+
+    cs.groupId = null;
+    return null;
   }
 
   function getCardsInGroup(group) {
     if (!state.scenario) return [];
     const drawnCards = state.scenario.cards.slice(0, state.drawnCount);
     return drawnCards.filter(c => {
-      const cs = state.cardsState[c.id];
-      return cs && isCardInsideGroup(cs, group);
+      const g = findGroupContainingCard(c.id);
+      return g && g.id === group.id;
     });
   }
 
@@ -990,42 +1001,34 @@
       const el = document.createElement('div');
       el.id = `group-${group.id}`;
       el.dataset.groupId = group.id;
-      el.className = `group-zone ${theme.border} ${theme.bg}`;
-      el.style.left = `${group.x}px`;
-      el.style.top = `${group.y}px`;
-      el.style.width = `${group.width}px`;
-      el.style.height = `${group.height}px`;
+      el.className = `group-zone ${theme.border} ${theme.bg} shadow-xl`;
 
       el.innerHTML = `
-        <div class="group-zone-header px-3.5 py-2.5 flex items-center justify-between gap-2 ${theme.headerBg}">
-          <div class="flex items-center gap-2 flex-1 min-w-0">
-            <button type="button" class="btn-group-color w-4 h-4 rounded-full ${theme.dot} ring-2 ring-white/20 hover:scale-125 transition shrink-0" title="Cambia colore gruppo"></button>
+        <div class="group-zone-header px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 ${theme.headerBg}">
+          <div class="flex items-center gap-2 flex-1 min-w-[180px]">
+            <button type="button" class="btn-group-color w-4 h-4 rounded-full ${theme.dot} ring-2 ring-white/20 hover:scale-125 transition shrink-0 cursor-pointer" title="Cambia colore gruppo"></button>
             <input type="text" value="${escapeHtml(group.title)}"
               class="group-title-input bg-transparent text-sm font-extrabold ${theme.text} uppercase tracking-wider focus:outline-none focus:bg-black/30 px-1.5 py-0.5 rounded w-full truncate"
-              title="Clicca per rinominare l'area di raggruppamento" />
+              title="Clicca per rinominare il gruppo" />
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <span class="text-xs font-mono-tech px-2 py-0.5 rounded bg-black/50 text-stone-200 border border-white/10" title="Carte presenti in quest'area">
+            <span class="text-xs font-mono-tech px-2 py-0.5 rounded bg-black/50 text-stone-200 border border-white/10" title="Carte presenti in questo gruppo">
               ${cardsInside.length} ${cardsInside.length === 1 ? 'carta' : 'carte'}
             </span>
             <button type="button" class="btn-group-collapse text-xs px-2 py-0.5 rounded bg-stone-800/80 hover:bg-stone-700 text-stone-200 border border-stone-600/50 transition cursor-pointer" title="Riduci a solo titolo (Collapse) o riespandi tutte le carte in questo gruppo">
-              ${allCollapsedInside ? '▾ Espandi' : '▴ Compatta'}
+              ${allCollapsedInside ? '▾ Espandi tutte' : '▴ Compatta tutte'}
             </button>
-            <button type="button" class="btn-group-tidy text-xs px-2 py-0.5 rounded bg-stone-800/80 hover:bg-stone-700 text-stone-200 border border-stone-600/50 transition cursor-pointer" title="Ordina le carte in griglia dentro questo gruppo">
-              Ordina
-            </button>
-            <button type="button" class="btn-group-delete text-stone-400 hover:text-red-400 px-1.5 py-0.5 rounded transition text-sm font-bold cursor-pointer" title="Elimina area gruppo (le carte non verranno eliminate)">
+            <button type="button" class="btn-group-delete text-stone-400 hover:text-red-400 px-1.5 py-0.5 rounded transition text-sm font-bold cursor-pointer" title="Elimina gruppo (le carte torneranno tra i reperti da smistare)">
               ✕
             </button>
           </div>
         </div>
-        <div class="p-2.5 flex justify-end items-end pointer-events-none">
-          <span class="text-[11px] font-mono-tech text-stone-400/80 uppercase tracking-widest select-none">Trascina o usa 📁 sulla carta per aggiungere qui</span>
-        </div>
-        <div class="group-resize-handle flex items-end justify-end p-0.5" title="Trascina per ridimensionare l'area">
-          <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
-            <path d="M11 1L1 11M11 6L6 11M11 10L10 11" stroke="#a8a29e" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+        <div id="group-cards-${group.id}" class="group-cards-container grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 items-start">
+          ${cardsInside.length === 0 ? `
+            <div class="col-span-full py-6 px-4 text-center text-xs font-mono-tech text-stone-400/80 border border-dashed border-white/10 rounded-lg select-none">
+              Nessuna carta in questo gruppo — Usa il bottone <b>📁</b> su una carta (o trascinala qui) per aggiungerla
+            </div>
+          ` : ''}
         </div>
       `;
 
@@ -1033,9 +1036,33 @@
       dom.groupsLayer.appendChild(el);
     });
 
+    const unassignedSection = document.getElementById('unassigned-section');
+    if (unassignedSection && !unassignedSection.dataset.dropBound) {
+      unassignedSection.dataset.dropBound = '1';
+      unassignedSection.addEventListener('dragover', e => {
+        e.preventDefault();
+        unassignedSection.classList.add('border-amber-400', 'bg-stone-900/80');
+      });
+      unassignedSection.addEventListener('dragleave', () => {
+        unassignedSection.classList.remove('border-amber-400', 'bg-stone-900/80');
+      });
+      unassignedSection.addEventListener('drop', e => {
+        e.preventDefault();
+        unassignedSection.classList.remove('border-amber-400', 'bg-stone-900/80');
+        const cid = e.dataTransfer?.getData('text/plain');
+        if (cid && state.cardsState[cid]) {
+          state.cardsState[cid].groupId = null;
+          renderAll();
+          saveState();
+          showToast('Carta spostata in "Nuovi Reperti / Da Smistare"', 'stone');
+        }
+      });
+    }
+
     if (dom.multiGroupSelect) {
-      dom.multiGroupSelect.innerHTML = `<option value="">📁 Aggiungi a un Gruppo...</option>` +
+      dom.multiGroupSelect.innerHTML = `<option value="">📁 Sposta nel Gruppo...</option>` +
         state.groups.map(g => `<option value="${g.id}">${escapeHtml(g.title)}</option>`).join('') +
+        `<option value="__unassigned__">📥 Sposta in Da Smistare</option>` +
         `<option value="__new_group__">➕ Crea Nuovo Gruppo con selezione...</option>`;
     }
   }
@@ -1043,13 +1070,20 @@
   function renderCards() {
     if (!state.scenario) return;
     dom.cardsLayer.innerHTML = '';
+    state.groups.forEach(group => {
+      const container = document.getElementById(`group-cards-${group.id}`);
+      if (container && getCardsInGroup(group).length > 0) {
+        container.innerHTML = '';
+      }
+    });
 
     const drawnCards = state.scenario.cards.slice(0, state.drawnCount);
+    let unassignedCount = 0;
 
     drawnCards.forEach(card => {
       let cs = state.cardsState[card.id];
       if (!cs) {
-        cs = { x: 100, y: 100, note: '', important: false, archived: false, collapsed: false, highlights: [], zIndex: 15 };
+        cs = { groupId: null, note: '', important: false, archived: false, collapsed: false, highlights: [] };
         state.cardsState[card.id] = cs;
       }
       if (!Array.isArray(cs.highlights)) cs.highlights = [];
@@ -1063,11 +1097,37 @@
       const parentGroup = findGroupContainingCard(card.id);
       const parentTheme = parentGroup ? (GROUP_THEMES[parentGroup.theme] || GROUP_THEMES.amber) : null;
 
+      if (!parentGroup) {
+        unassignedCount += 1;
+      }
+
+      // Red Strings connected to this card
+      const cardConnections = state.connections.filter(c => c.from === card.id || c.to === card.id);
+      const redStringsHtml = cardConnections.length > 0 ? `
+        <div class="px-2.5 py-1 bg-red-950/15 border-b border-stone-300/80 flex flex-wrap items-center gap-1 shrink-0">
+          ${cardConnections.map(conn => {
+            const otherId = conn.from === card.id ? conn.to : conn.from;
+            const otherCard = state.scenario.cards.find(c => c.id === otherId);
+            return `
+              <div class="inline-flex items-center rounded-full bg-red-950 text-red-100 border border-red-500 text-[10.5px] font-mono-tech overflow-hidden shadow-sm">
+                <button type="button" data-jump-conn-card="${otherId}" class="px-2 py-0.5 hover:bg-red-800 font-bold transition cursor-pointer" title="Vai alla carta collegata ${otherCard ? escapeHtml(otherCard.title) : ''}">
+                  🧶 → ${otherCard ? escapeHtml(otherCard.number) : otherId}${conn.label ? ': ' + escapeHtml(conn.label) : ''}
+                </button>
+                <button type="button" data-edit-conn="${conn.id}" class="px-1.5 py-0.5 bg-red-900/80 hover:bg-red-700 text-red-200 border-l border-red-600/60 transition cursor-pointer" title="Modifica etichetta o rimuovi filo rosso">
+                  ✎
+                </button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      ` : '';
+
       const el = document.createElement('div');
       el.id = `card-${card.id}`;
       el.dataset.cardId = card.id;
+      el.draggable = true;
       el.className = [
-        'crime-card absolute',
+        'crime-card',
         catStyle.headerAccent,
         isSelected ? 'is-selected' : '',
         cs.important ? 'is-important' : '',
@@ -1080,10 +1140,6 @@
         delete cs.justDrawn;
       }
 
-      el.style.left = `${cs.x}px`;
-      el.style.top = `${cs.y}px`;
-      el.style.zIndex = cs.zIndex || 15;
-
       const illustrationHtml = window.ProfilerIllustrations.render(card.image, card.category, card.number);
       const formattedRawTextHtml = renderHighlightedText(card.rawText, cs.highlights);
 
@@ -1093,8 +1149,8 @@
           <div class="card-pin ${isLinkStart ? 'pin-active ring-4 ring-red-500' : ''}"></div>
         </div>
 
-        <!-- Card Header (Drag Handle + Double click to Collapse/Expand; ONLY Collapse button here) -->
-        <div class="card-header-drag px-3 pt-2.5 pb-1.5 ${isCollapsed ? 'rounded' : 'border-b border-stone-300 rounded-t'} bg-stone-200/75 flex flex-col gap-1 shrink-0" title="Trascina per spostare • Doppio click per ridurre a solo titolo (Collapse)">
+        <!-- Card Header (Double click to Collapse/Expand; ONLY Collapse button here) -->
+        <div class="card-header-drag px-3 pt-2.5 pb-1.5 ${isCollapsed && !redStringsHtml ? 'rounded' : 'border-b border-stone-300 rounded-t'} bg-stone-200/75 flex flex-col gap-1 shrink-0" title="Doppio click per ridurre a solo titolo (Collapse) • Trascina o usa 📁 per cambiare gruppo">
           <!-- Row 1: Number, Category Badge & Collapse Button Only -->
           <div class="flex items-center justify-between gap-1.5">
             <div class="flex items-center gap-1.5">
@@ -1124,6 +1180,8 @@
           </div>
         </div>
 
+        ${redStringsHtml}
+
         ${cs.archived ? `
           <div class="px-3 py-2 flex items-center justify-between text-xs font-mono-tech text-stone-600 bg-stone-200/60 border-t border-stone-300 rounded-b">
             <span>[PISTA ARCHIVIATA]</span>
@@ -1136,7 +1194,7 @@
           </div>
 
           <!-- Objective Typewriter Raw Text (Selectable for Copy/Paste, Highlighting & Timeline!) -->
-          <div class="card-text-scroll-area px-2.5 py-1.5 flex-1 min-h-0 overflow-y-auto evidence-scroll">
+          <div class="card-text-scroll-area px-2.5 py-1.5 flex-1 min-h-0 max-h-[155px] overflow-y-auto evidence-scroll">
             <div data-evidence-card-id="${card.id}"
               class="card-raw-text selectable-evidence-text font-typewriter text-[12.2px] leading-[1.44] p-2.5 text-stone-900 whitespace-pre-line bg-white/85 rounded border border-stone-300/90 shadow-inner"
               title="Seleziona il testo o un orario col mouse per copiarlo, evidenziarlo o inviarlo alla Timeline">${formattedRawTextHtml}</div>
@@ -1182,103 +1240,35 @@
       `;
 
       bindCardEvents(el, card.id);
-      dom.cardsLayer.appendChild(el);
-    });
-  }
 
-  function getPinCoordinates(cardId) {
-    const cs = state.cardsState[cardId];
-    if (!cs) return null;
-    const dims = getCardDimensions(cs);
-    return {
-      x: cs.x + dims.width / 2,
-      y: cs.y + 2
-    };
+      if (parentGroup) {
+        const groupContainer = document.getElementById(`group-cards-${parentGroup.id}`);
+        if (groupContainer) {
+          groupContainer.appendChild(el);
+        } else {
+          dom.cardsLayer.appendChild(el);
+        }
+      } else {
+        dom.cardsLayer.appendChild(el);
+      }
+    });
+
+    const unassignedBadge = document.getElementById('unassigned-count-badge');
+    if (unassignedBadge) {
+      unassignedBadge.textContent = String(unassignedCount);
+    }
+
+    if (unassignedCount === 0) {
+      dom.cardsLayer.innerHTML = `
+        <div class="col-span-full py-2.5 px-3 text-center text-xs font-mono-tech text-stone-400/80 border border-dashed border-stone-700/70 rounded-lg select-none">
+          ✅ Tutti i reperti pescati sono stati assegnati ai gruppi sottostanti — Pesca una nuova carta o trascina qui per rimuoverla da un gruppo
+        </div>
+      `;
+    }
   }
 
   function renderStrings() {
-    dom.stringsSvg.innerHTML = '';
-    dom.stringLabelsLayer.innerHTML = '';
-
-    state.connections.forEach(conn => {
-      const p1 = getPinCoordinates(conn.from);
-      const p2 = getPinCoordinates(conn.to);
-      if (!p1 || !p2) return;
-
-      const dx = p2.x - p1.x;
-      const dy = p2.y - p1.y;
-      const dist = Math.hypot(dx, dy);
-      const sag = Math.min(90, Math.max(18, dist * 0.14));
-      const cx = (p1.x + p2.x) / 2;
-      const cy = (p1.y + p2.y) / 2 + sag;
-
-      const midX = 0.25 * p1.x + 0.5 * cx + 0.25 * p2.x;
-      const midY = 0.25 * p1.y + 0.5 * cy + 0.25 * p2.y;
-
-      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.setAttribute('class', 'red-string-group');
-
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', `M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}`);
-      path.setAttribute('class', 'red-string-path');
-
-      const knot1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      knot1.setAttribute('cx', p1.x);
-      knot1.setAttribute('cy', p1.y);
-      knot1.setAttribute('r', '5');
-      knot1.setAttribute('fill', '#991b1b');
-      knot1.setAttribute('stroke', '#ef4444');
-      knot1.setAttribute('stroke-width', '1.5');
-
-      const knot2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      knot2.setAttribute('cx', p2.x);
-      knot2.setAttribute('cy', p2.y);
-      knot2.setAttribute('r', '5');
-      knot2.setAttribute('fill', '#991b1b');
-      knot2.setAttribute('stroke', '#ef4444');
-      knot2.setAttribute('stroke-width', '1.5');
-
-      g.appendChild(path);
-      g.appendChild(knot1);
-      g.appendChild(knot2);
-      dom.stringsSvg.appendChild(g);
-
-      const badge = document.createElement('div');
-      badge.className = conn.label
-        ? 'string-label-badge absolute z-30 px-2.5 py-0.5 rounded-full text-xs font-mono-tech font-bold bg-red-950/95 text-red-100 border border-red-500 hover:bg-red-800 hover:scale-105 transition flex items-center gap-1.5'
-        : 'string-label-badge absolute z-30 px-2 py-0.5 rounded-full text-[11px] font-mono-tech bg-stone-900/90 text-stone-300 border border-red-600/60 opacity-80 hover:opacity-100 hover:bg-red-950 hover:text-white transition';
-      badge.style.left = `${midX}px`;
-      badge.style.top = `${midY}px`;
-      badge.title = 'Clicca per modificare l\'etichetta o eliminare il filo rosso';
-      badge.innerHTML = conn.label
-        ? `<span>🧶 ${escapeHtml(conn.label)}</span>`
-        : `<span>+ Etichetta</span>`;
-
-      badge.addEventListener('mousedown', e => e.stopPropagation());
-      badge.addEventListener('click', e => {
-        e.stopPropagation();
-        openStringModal(conn.id);
-      });
-
-      dom.stringLabelsLayer.appendChild(badge);
-    });
-
-    if (state.linkStartCardId) {
-      const p1 = getPinCoordinates(state.linkStartCardId);
-      if (p1) {
-        const p2 = state.mouseWorldPos;
-        const cx = (p1.x + p2.x) / 2;
-        const cy = (p1.y + p2.y) / 2 + 28;
-
-        const previewPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        previewPath.setAttribute('d', `M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}`);
-        previewPath.setAttribute('fill', 'none');
-        previewPath.setAttribute('stroke', '#ef4444');
-        previewPath.setAttribute('stroke-width', '3');
-        previewPath.setAttribute('stroke-dasharray', '6,4');
-        dom.stringsSvg.appendChild(previewPath);
-      }
-    }
+    // Red Strings are rendered directly on each connected card in Structured Grid mode
   }
 
   // =========================================================================
@@ -1408,13 +1398,39 @@
       });
     }
 
-    // 5. Card Dragging & Selection
-    cardEl.addEventListener('mousedown', e => {
-      if (e.button !== 0) return;
-      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') {
+    // 5. Red String Connection Badges on Card
+    cardEl.querySelectorAll('[data-jump-conn-card]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        focusCardOnBoard(btn.dataset.jumpConnCard);
+      });
+    });
+    cardEl.querySelectorAll('[data-edit-conn]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        openStringModal(btn.dataset.editConn);
+      });
+    });
+
+    // 6. HTML5 Drag & Drop between Groups + Click Selection
+    cardEl.addEventListener('dragstart', e => {
+      if (document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT')) {
+        e.preventDefault();
         return;
       }
-      e.stopPropagation();
+      e.dataTransfer?.setData('text/plain', cardId);
+      cardEl.classList.add('opacity-60');
+    });
+
+    cardEl.addEventListener('dragend', () => {
+      cardEl.classList.remove('opacity-60');
+      clearHoveredGroups();
+    });
+
+    cardEl.addEventListener('click', e => {
+      if (e.target.closest('button, textarea, input, select, .card-raw-text')) {
+        return;
+      }
       hideTextSelectionToolbar();
       closeCardGroupPopover();
 
@@ -1431,91 +1447,15 @@
           state.selectedCards.add(cardId);
           cardEl.classList.add('is-selected');
         }
-        updateMultiSelectToolbar();
-      } else if (!state.selectedCards.has(cardId)) {
+      } else {
         state.selectedCards.clear();
         document.querySelectorAll('.crime-card.is-selected').forEach(el => el.classList.remove('is-selected'));
         state.selectedCards.add(cardId);
         cardEl.classList.add('is-selected');
-        updateMultiSelectToolbar();
       }
 
+      updateMultiSelectToolbar();
       renderTimeline();
-
-      state.selectedCards.forEach(id => {
-        state.maxZIndex += 1;
-        if (state.cardsState[id]) {
-          state.cardsState[id].zIndex = state.maxZIndex;
-          const domCard = document.getElementById(`card-${id}`);
-          if (domCard) domCard.style.zIndex = state.maxZIndex;
-        }
-      });
-
-      const startWorld = screenToWorld(e.clientX, e.clientY);
-      const initialPositions = {};
-      state.selectedCards.forEach(id => {
-        if (state.cardsState[id]) {
-          initialPositions[id] = {
-            x: state.cardsState[id].x,
-            y: state.cardsState[id].y
-          };
-        }
-      });
-
-      let moved = false;
-
-      function onMouseMove(ev) {
-        const currWorld = screenToWorld(ev.clientX, ev.clientY);
-        const dx = currWorld.x - startWorld.x;
-        const dy = currWorld.y - startWorld.y;
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
-
-        state.selectedCards.forEach(id => {
-          const initPos = initialPositions[id];
-          if (!initPos) return;
-          const nx = Math.round(initPos.x + dx);
-          const ny = Math.round(initPos.y + dy);
-          state.cardsState[id].x = nx;
-          state.cardsState[id].y = ny;
-
-          const domEl = document.getElementById(`card-${id}`);
-          if (domEl) {
-            domEl.style.left = `${nx}px`;
-            domEl.style.top = `${ny}px`;
-          }
-        });
-
-        highlightHoveredGroups();
-        renderStrings();
-      }
-
-      function onMouseUp() {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-        clearHoveredGroups();
-        if (moved) {
-          // If any dragged card was dropped inside a group, auto-expand that group if the card overflows its edges
-          autoExpandGroupsForDroppedCards(Array.from(state.selectedCards));
-          renderGroups();
-          renderCards();
-          saveState();
-        }
-      }
-
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
-    });
-  }
-
-  function highlightHoveredGroups() {
-    state.groups.forEach(g => {
-      const gEl = document.getElementById(`group-${g.id}`);
-      if (!gEl) return;
-      const anyInside = Array.from(state.selectedCards).some(id => {
-        const cs = state.cardsState[id];
-        return cs && isCardInsideGroup(cs, g);
-      });
-      gEl.classList.toggle('drop-target-hover', anyInside);
     });
   }
 
@@ -1553,7 +1493,13 @@
 
     dom.cardGroupPopoverList.innerHTML = `
       ${itemsHtml}
-      <div class="border-t border-stone-800 mt-1 pt-1">
+      <div class="border-t border-stone-800 mt-1 pt-1 flex flex-col gap-1">
+        ${currentGroup ? `
+          <button type="button" data-pick-group="__unassigned__"
+            class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-stone-300 hover:bg-stone-800 font-medium flex items-center gap-2 cursor-pointer">
+            <span>📥 Sposta in "Nuovi Reperti / Da Smistare"</span>
+          </button>
+        ` : ''}
         <button type="button" data-pick-group="__new_group__"
           class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-amber-300 hover:bg-stone-800 font-semibold flex items-center gap-2 cursor-pointer">
           <span>➕ Crea Nuovo Gruppo con questa carta</span>
@@ -1568,6 +1514,11 @@
         closeCardGroupPopover();
         if (targetGroupId === '__new_group__') {
           createNewGroupWithCards([cardId]);
+        } else if (targetGroupId === '__unassigned__') {
+          if (state.cardsState[cardId]) state.cardsState[cardId].groupId = null;
+          renderAll();
+          saveState();
+          showToast('Carta riportata in "Nuovi Reperti / Da Smistare"', 'stone');
         } else {
           addCardsToGroup(targetGroupId, [cardId]);
         }
@@ -1596,18 +1547,11 @@
 
   function createNewGroupWithCards(cardIds) {
     if (!cardIds || cardIds.length === 0) return;
-    const firstCs = state.cardsState[cardIds[0]];
-    const baseX = firstCs ? Math.max(20, firstCs.x - 20) : 120;
-    const baseY = firstCs ? Math.max(20, firstCs.y - 54) : 120;
     const themeKey = THEME_KEYS[state.groups.length % THEME_KEYS.length];
 
     const newGroup = {
       id: 'grp-' + Date.now(),
       title: '📁 NUOVO GRUPPO INDIZI',
-      x: baseX,
-      y: baseY,
-      width: 280,
-      height: 220,
       theme: themeKey
     };
 
@@ -1616,23 +1560,20 @@
   }
 
   /**
-   * Adds one or more cards to an existing group and automatically enlarges
-   * the group's width and height to accommodate all cards inside it cleanly.
+   * Adds one or more cards to an existing group; in Structured Grid mode,
+   * the group's CSS grid container automatically grows vertically to accommodate them.
    */
   function addCardsToGroup(groupId, cardIdsToAdd) {
     if (!groupId || !Array.isArray(cardIdsToAdd) || cardIdsToAdd.length === 0) return;
     const group = state.groups.find(g => g.id === groupId);
     if (!group) return;
 
-    const existingIds = getCardsInGroup(group).map(c => c.id);
-    const allCardIds = [...new Set([...existingIds, ...cardIdsToAdd])];
+    cardIdsToAdd.forEach(cid => {
+      if (state.cardsState[cid]) {
+        state.cardsState[cid].groupId = group.id;
+      }
+    });
 
-    const prevWidth = group.width;
-    const prevHeight = group.height;
-
-    layoutCardsInsideGroup(group, allCardIds, true);
-
-    const grew = group.width > prevWidth || group.height > prevHeight;
     renderAll();
     saveState();
 
@@ -1646,62 +1587,22 @@
     if (cardIdsToAdd.length === 1 && state.scenario) {
       const card = state.scenario.cards.find(c => c.id === cardIdsToAdd[0]);
       showToast(
-        `${card ? 'Carta ' + card.number : 'Carta'} aggiunta a "${group.title}"${grew ? ' (gruppo ingrandito automaticamente)' : ''}`,
+        `${card ? 'Carta ' + card.number : 'Carta'} aggiunta a "${group.title}"`,
         'amber'
       );
     } else {
       showToast(
-        `${cardIdsToAdd.length} carte aggiunte a "${group.title}"${grew ? ' (gruppo ingrandito automaticamente)' : ''}`,
+        `${cardIdsToAdd.length} carte aggiunte a "${group.title}"`,
         'amber'
       );
     }
   }
 
-  /**
-   * If a user manually drags and drops a card so its center lands inside a group,
-   * automatically expand that group's bounds if the card overflows its edges.
-   */
-  function autoExpandGroupsForDroppedCards(droppedCardIds) {
-    const padX = 16;
-    const padBottom = 18;
-    const padTop = 48;
-
-    droppedCardIds.forEach(id => {
-      const cs = state.cardsState[id];
-      if (!cs) return;
-      const group = findGroupContainingCard(id);
-      if (!group) return;
-
-      const dims = getCardDimensions(cs);
-      if (cs.x < group.x + padX) {
-        const diff = (group.x + padX) - cs.x;
-        group.x -= diff;
-        group.width += diff;
-      }
-      if (cs.y < group.y + padTop) {
-        const diff = (group.y + padTop) - cs.y;
-        group.y -= diff;
-        group.height += diff;
-      }
-      const neededRight = (cs.x + dims.width + padX) - group.x;
-      if (neededRight > group.width) {
-        group.width = neededRight;
-      }
-      const neededBottom = (cs.y + dims.height + padBottom) - group.y;
-      if (neededBottom > group.height) {
-        group.height = neededBottom;
-      }
-    });
-  }
-
   function bindGroupEvents(groupEl, group) {
-    const header = groupEl.querySelector('.group-zone-header');
     const titleInput = groupEl.querySelector('.group-title-input');
     const btnColor = groupEl.querySelector('.btn-group-color');
     const btnCollapse = groupEl.querySelector('.btn-group-collapse');
-    const btnTidy = groupEl.querySelector('.btn-group-tidy');
     const btnDelete = groupEl.querySelector('.btn-group-delete');
-    const resizeHandle = groupEl.querySelector('.group-resize-handle');
 
     titleInput.addEventListener('mousedown', e => e.stopPropagation());
     titleInput.addEventListener('input', e => {
@@ -1725,7 +1626,7 @@
         e.stopPropagation();
         const cardsInside = getCardsInGroup(group);
         if (cardsInside.length === 0) {
-          showToast('Trascina o aggiungi prima delle carte dentro questo gruppo!', 'stone');
+          showToast('Aggiungi prima delle carte dentro questo gruppo!', 'stone');
           return;
         }
         const shouldCollapse = cardsInside.some(c => !state.cardsState[c.id]?.collapsed);
@@ -1733,164 +1634,42 @@
           const cs = state.cardsState[c.id];
           if (cs) cs.collapsed = shouldCollapse;
         });
-        tidyCardsInGroup(group);
+        renderAll();
+        saveState();
       });
     }
-
-    btnTidy.addEventListener('mousedown', e => e.stopPropagation());
-    btnTidy.addEventListener('click', e => {
-      e.stopPropagation();
-      tidyCardsInGroup(group);
-    });
 
     btnDelete.addEventListener('mousedown', e => e.stopPropagation());
     btnDelete.addEventListener('click', e => {
       e.stopPropagation();
+      getCardsInGroup(group).forEach(c => {
+        if (state.cardsState[c.id]) state.cardsState[c.id].groupId = null;
+      });
       state.groups = state.groups.filter(g => g.id !== group.id);
       renderGroups();
       renderCards();
       saveState();
-      showToast('Area gruppo rimossa (le carte sono rimaste sulla lavagna)', 'stone');
+      showToast('Gruppo rimosso (le carte sono tornate in "Nuovi Reperti / Da Smistare")', 'stone');
     });
 
-    header.addEventListener('mousedown', e => {
-      if (e.button !== 0 || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
-      e.stopPropagation();
-      closeCardGroupPopover();
-
-      const startWorld = screenToWorld(e.clientX, e.clientY);
-      const startGroupX = group.x;
-      const startGroupY = group.y;
-
-      const containedCards = getCardsInGroup(group);
-      const initialCardPos = {};
-      containedCards.forEach(c => {
-        initialCardPos[c.id] = {
-          x: state.cardsState[c.id].x,
-          y: state.cardsState[c.id].y
-        };
-      });
-
-      function onMouseMove(ev) {
-        const currWorld = screenToWorld(ev.clientX, ev.clientY);
-        const dx = Math.round(currWorld.x - startWorld.x);
-        const dy = Math.round(currWorld.y - startWorld.y);
-
-        group.x = startGroupX + dx;
-        group.y = startGroupY + dy;
-        groupEl.style.left = `${group.x}px`;
-        groupEl.style.top = `${group.y}px`;
-
-        containedCards.forEach(c => {
-          const initP = initialCardPos[c.id];
-          if (!initP) return;
-          state.cardsState[c.id].x = initP.x + dx;
-          state.cardsState[c.id].y = initP.y + dy;
-          const cEl = document.getElementById(`card-${c.id}`);
-          if (cEl) {
-            cEl.style.left = `${state.cardsState[c.id].x}px`;
-            cEl.style.top = `${state.cardsState[c.id].y}px`;
-          }
-        });
-
-        renderStrings();
-      }
-
-      function onMouseUp() {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-        saveState();
-      }
-
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
+    // HTML5 Drop Target for Cards
+    groupEl.addEventListener('dragover', e => {
+      e.preventDefault();
+      groupEl.classList.add('drop-target-hover');
     });
-
-    resizeHandle.addEventListener('mousedown', e => {
-      if (e.button !== 0) return;
-      e.stopPropagation();
-
-      const startWorld = screenToWorld(e.clientX, e.clientY);
-      const startW = group.width;
-      const startH = group.height;
-
-      function onMouseMove(ev) {
-        const currWorld = screenToWorld(ev.clientX, ev.clientY);
-        group.width = Math.max(280, Math.round(startW + (currWorld.x - startWorld.x)));
-        group.height = Math.max(160, Math.round(startH + (currWorld.y - startWorld.y)));
-        groupEl.style.width = `${group.width}px`;
-        groupEl.style.height = `${group.height}px`;
+    groupEl.addEventListener('dragleave', e => {
+      if (!groupEl.contains(e.relatedTarget)) {
+        groupEl.classList.remove('drop-target-hover');
       }
-
-      function onMouseUp() {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-        renderGroups();
-        renderCards();
-        saveState();
-      }
-
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
     });
-  }
-
-  function layoutCardsInsideGroup(group, cardIds, autoGrow = true) {
-    const stepX = 304;
-    const currentCols = Math.max(1, Math.floor((group.width - 20) / stepX));
-
-    // If autoGrow is enabled, widen the group automatically when more columns make sense
-    let targetCols = currentCols;
-    if (autoGrow) {
-      if (cardIds.length >= 2 && targetCols < 2) {
-        targetCols = 2;
-      } else if (cardIds.length >= 5 && targetCols < 3) {
-        targetCols = 3;
+    groupEl.addEventListener('drop', e => {
+      e.preventDefault();
+      groupEl.classList.remove('drop-target-hover');
+      const draggedCardId = e.dataTransfer?.getData('text/plain');
+      if (draggedCardId) {
+        addCardsToGroup(group.id, [draggedCardId]);
       }
-    }
-
-    const neededWidth = 32 + Math.min(Math.max(1, cardIds.length), targetCols) * stepX;
-    if (autoGrow && group.width < neededWidth) {
-      group.width = neededWidth;
-    }
-
-    const cols = Math.max(1, Math.floor((group.width - 20) / stepX));
-    let currentY = group.y + 52;
-
-    for (let i = 0; i < cardIds.length; i += cols) {
-      const rowIds = cardIds.slice(i, i + cols);
-      let rowMaxHeight = 0;
-
-      rowIds.forEach((id, colIdx) => {
-        const cs = state.cardsState[id];
-        if (!cs) return;
-        cs.x = group.x + 16 + colIdx * stepX;
-        cs.y = currentY;
-        state.maxZIndex += 1;
-        cs.zIndex = state.maxZIndex;
-        const dims = getCardDimensions(cs);
-        if (dims.height > rowMaxHeight) rowMaxHeight = dims.height;
-      });
-
-      currentY += rowMaxHeight + 16;
-    }
-
-    const neededHeight = Math.max(180, currentY - group.y + 16);
-    if (autoGrow && group.height < neededHeight) {
-      group.height = neededHeight;
-    }
-  }
-
-  function tidyCardsInGroup(group) {
-    const cardsInside = getCardsInGroup(group);
-    if (cardsInside.length === 0) {
-      showToast('Trascina o aggiungi prima delle carte dentro questo gruppo!', 'stone');
-      return;
-    }
-
-    layoutCardsInsideGroup(group, cardsInside.map(c => c.id), true);
-    renderAll();
-    saveState();
+    });
   }
 
   // =========================================================================
@@ -1900,18 +1679,15 @@
   function handleCardLinkClick(cardId) {
     if (!state.linkStartCardId) {
       state.linkStartCardId = cardId;
-      state.mouseWorldPos = getPinCoordinates(cardId) || { x: 0, y: 0 };
       updateLinkBanner();
-      renderCards();
-      renderStrings();
+      renderBoard();
       return;
     }
 
     if (state.linkStartCardId === cardId) {
       state.linkStartCardId = null;
       updateLinkBanner();
-      renderCards();
-      renderStrings();
+      renderBoard();
       return;
     }
 
@@ -1923,8 +1699,7 @@
     if (existing) {
       state.linkStartCardId = null;
       updateLinkBanner();
-      renderCards();
-      renderStrings();
+      renderBoard();
       openStringModal(existing.id);
       return;
     }
@@ -1939,8 +1714,7 @@
     state.connections.push(newConn);
     state.linkStartCardId = null;
     updateLinkBanner();
-    renderCards();
-    renderStrings();
+    renderBoard();
     saveState();
 
     openStringModal(newConn.id);
@@ -1982,6 +1756,7 @@
     const conn = state.connections.find(c => c.id === state.editingStringId);
     if (conn) {
       conn.label = dom.stringLabelInput.value.trim();
+      renderCards();
       renderStrings();
       saveState();
     }
@@ -1990,6 +1765,7 @@
 
   function deleteActiveString() {
     state.connections = state.connections.filter(c => c.id !== state.editingStringId);
+    renderCards();
     renderStrings();
     saveState();
     closeStringModal();
@@ -2124,7 +1900,7 @@
             <div class="pt-1">
               <label class="block text-[10px] font-mono-tech uppercase text-stone-400 mb-1">📁 Aggiungi / Sposta nel Gruppo:</label>
               <select id="modal-group-select" class="w-full bg-stone-950 border border-stone-700 rounded px-2.5 py-1.5 text-xs text-amber-300 font-semibold focus:outline-none focus:border-amber-500">
-                <option value="">— Seleziona un Gruppo esistente —</option>
+                <option value="__unassigned__" ${!currentGroup ? 'selected' : ''}>📥 Nuovi Reperti / Da Smistare</option>
                 ${state.groups.map(g => `<option value="${g.id}" ${currentGroup && currentGroup.id === g.id ? 'selected' : ''}>${escapeHtml(g.title)}</option>`).join('')}
                 <option value="__new_group__">➕ Crea Nuovo Gruppo con questa carta...</option>
               </select>
@@ -2203,6 +1979,10 @@
       if (!val) return;
       if (val === '__new_group__') {
         createNewGroupWithCards([cardId]);
+      } else if (val === '__unassigned__') {
+        if (state.cardsState[cardId]) state.cardsState[cardId].groupId = null;
+        renderAll();
+        saveState();
       } else {
         addCardsToGroup(val, [cardId]);
       }
@@ -2671,20 +2451,9 @@
       if (e.key === 'Enter') saveTimelineModal();
     });
 
-    // 3. Mouse Wheel Zoom on Viewport
-    dom.viewport.addEventListener('wheel', e => {
-      const scrollArea = e.target.closest('.card-text-scroll-area');
-      if (scrollArea && scrollArea.scrollHeight > scrollArea.clientHeight) {
-        return;
-      }
-      e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 1.09 : 0.91;
-      zoomAtPoint(state.scale * zoomFactor, e.clientX, e.clientY);
-    }, { passive: false });
-
-    // 4. Viewport MouseDown: Pan OR Marquee Selection Box
-    dom.viewport.addEventListener('mousedown', e => {
-      if (e.target !== dom.viewport && e.target !== dom.world && e.target !== dom.groupsLayer && e.target !== dom.cardsLayer) {
+    // 3. Click on empty board background clears selection / link mode
+    dom.viewport.addEventListener('click', e => {
+      if (e.target.closest('.crime-card, .group-zone-header, button, input, textarea, select')) {
         return;
       }
 
@@ -2695,67 +2464,6 @@
         state.linkStartCardId = null;
         updateLinkBanner();
         renderCards();
-        renderStrings();
-        return;
-      }
-
-      const useMarquee = e.shiftKey || state.toolMode === 'select';
-
-      if (useMarquee && e.button === 0) {
-        const startClientX = e.clientX;
-        const startClientY = e.clientY;
-        dom.marqueeBox.style.display = 'block';
-        dom.marqueeBox.style.left = `${startClientX}px`;
-        dom.marqueeBox.style.top = `${startClientY}px`;
-        dom.marqueeBox.style.width = '0px';
-        dom.marqueeBox.style.height = '0px';
-
-        function onMarqueeMove(ev) {
-          const x = Math.min(startClientX, ev.clientX);
-          const y = Math.min(startClientY, ev.clientY);
-          const w = Math.abs(ev.clientX - startClientX);
-          const h = Math.abs(ev.clientY - startClientY);
-
-          dom.marqueeBox.style.left = `${x}px`;
-          dom.marqueeBox.style.top = `${y}px`;
-          dom.marqueeBox.style.width = `${w}px`;
-          dom.marqueeBox.style.height = `${h}px`;
-
-          const topLeftWorld = screenToWorld(x, y);
-          const bottomRightWorld = screenToWorld(x + w, y + h);
-
-          state.selectedCards.clear();
-          const drawnCards = state.scenario ? state.scenario.cards.slice(0, state.drawnCount) : [];
-          drawnCards.forEach(c => {
-            const cs = state.cardsState[c.id];
-            if (!cs) return;
-            const dims = getCardDimensions(cs);
-            const intersects =
-              cs.x < bottomRightWorld.x &&
-              cs.x + dims.width > topLeftWorld.x &&
-              cs.y < bottomRightWorld.y &&
-              cs.y + dims.height > topLeftWorld.y;
-
-            const domCard = document.getElementById(`card-${c.id}`);
-            if (intersects) {
-              state.selectedCards.add(c.id);
-              if (domCard) domCard.classList.add('is-selected');
-            } else if (domCard) {
-              domCard.classList.remove('is-selected');
-            }
-          });
-          updateMultiSelectToolbar();
-        }
-
-        function onMarqueeUp() {
-          dom.marqueeBox.style.display = 'none';
-          renderTimeline();
-          window.removeEventListener('mousemove', onMarqueeMove);
-          window.removeEventListener('mouseup', onMarqueeUp);
-        }
-
-        window.addEventListener('mousemove', onMarqueeMove);
-        window.addEventListener('mouseup', onMarqueeUp);
         return;
       }
 
@@ -2765,123 +2473,13 @@
         updateMultiSelectToolbar();
         renderTimeline();
       }
-
-      const startPanX = state.panX;
-      const startPanY = state.panY;
-      const startClientX = e.clientX;
-      const startClientY = e.clientY;
-      dom.viewport.style.cursor = 'grabbing';
-
-      function onPanMove(ev) {
-        state.panX = startPanX + (ev.clientX - startClientX);
-        state.panY = startPanY + (ev.clientY - startClientY);
-        updateWorldTransform();
-      }
-
-      function onPanUp() {
-        dom.viewport.style.cursor = '';
-        window.removeEventListener('mousemove', onPanMove);
-        window.removeEventListener('mouseup', onPanUp);
-        saveState();
-      }
-
-      window.addEventListener('mousemove', onPanMove);
-      window.addEventListener('mouseup', onPanUp);
-    });
-
-    // 5. Track mouse position for live Red String preview
-    dom.viewport.addEventListener('mousemove', e => {
-      if (state.linkStartCardId) {
-        state.mouseWorldPos = screenToWorld(e.clientX, e.clientY);
-        renderStrings();
-      }
-    });
-
-    // 5b. Smartphone & Tablet Touch Support (1-finger drag for Pan/Cards/Groups + 2-finger Pinch-to-Zoom)
-    let activeTouchDrag = false;
-    let pinchStartDist = 0;
-    let pinchStartScale = 1;
-
-    dom.viewport.addEventListener('touchstart', e => {
-      if (e.touches.length === 2) {
-        if (activeTouchDrag) {
-          activeTouchDrag = false;
-          window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-        }
-        e.preventDefault();
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        pinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        pinchStartScale = state.scale;
-        return;
-      }
-
-      if (e.touches.length === 1) {
-        const t = e.touches[0];
-        const target = t.target;
-        if (
-          target.closest('button, input, textarea, select, .card-text-scroll-area, .card-pin-wrapper, .string-label-badge')
-        ) {
-          return;
-        }
-        activeTouchDrag = true;
-        target.dispatchEvent(new MouseEvent('mousedown', {
-          bubbles: true,
-          cancelable: true,
-          clientX: t.clientX,
-          clientY: t.clientY,
-          button: 0
-        }));
-      }
-    }, { passive: false });
-
-    window.addEventListener('touchmove', e => {
-      if (e.touches.length === 2 && pinchStartDist > 0) {
-        e.preventDefault();
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        const midX = (t1.clientX + t2.clientX) / 2;
-        const midY = (t1.clientY + t2.clientY) / 2;
-        zoomAtPoint(pinchStartScale * (dist / pinchStartDist), midX, midY);
-        return;
-      }
-
-      if (activeTouchDrag && e.touches.length === 1) {
-        e.preventDefault();
-        const t = e.touches[0];
-        window.dispatchEvent(new MouseEvent('mousemove', {
-          bubbles: true,
-          cancelable: true,
-          clientX: t.clientX,
-          clientY: t.clientY,
-          button: 0
-        }));
-      }
-    }, { passive: false });
-
-    window.addEventListener('touchend', e => {
-      if (e.touches.length < 2) {
-        pinchStartDist = 0;
-      }
-      if (activeTouchDrag && e.touches.length === 0) {
-        activeTouchDrag = false;
-        const t = e.changedTouches[0];
-        window.dispatchEvent(new MouseEvent('mouseup', {
-          bubbles: true,
-          cancelable: true,
-          clientX: t ? t.clientX : 0,
-          clientY: t ? t.clientY : 0,
-          button: 0
-        }));
-      }
     });
 
     window.addEventListener('resize', () => {
       applySurfaceTheme();
     });
 
-    // 6. Keyboard Shortcuts (ESC, D to draw)
+    // 4. Keyboard Shortcuts (ESC, D to draw)
     window.addEventListener('keydown', e => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
         if (e.key === 'Escape') e.target.blur();
@@ -2907,29 +2505,25 @@
       }
     });
 
-    // 7. Top Bar & HUD Controls
+    // 5. Top Bar Controls
     document.getElementById('btn-add-group').addEventListener('click', () => {
-      const center = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
       const themeKey = THEME_KEYS[state.groups.length % THEME_KEYS.length];
-      state.groups.push({
+      const newGroup = {
         id: 'grp-' + Date.now(),
         title: '📁 NUOVA AREA DI RAGGRUPPAMENTO',
-        x: Math.round(center.x - 220),
-        y: Math.round(center.y - 160),
-        width: 540,
-        height: 340,
         theme: themeKey
-      });
+      };
+      state.groups.push(newGroup);
       renderGroups();
+      renderCards();
       saveState();
-      showToast('Nuova Area di Raggruppamento creata sulla lavagna', 'amber');
-    });
-
-    dom.btnToolSelect.addEventListener('click', () => {
-      state.toolMode = state.toolMode === 'select' ? 'pan' : 'select';
-      state.linkStartCardId = null;
-      updateToolButtons();
-      updateLinkBanner();
+      const gEl = document.getElementById(`group-${newGroup.id}`);
+      if (gEl) {
+        gEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        gEl.classList.add('group-expanded-flash');
+        setTimeout(() => gEl.classList.remove('group-expanded-flash'), 800);
+      }
+      showToast('Nuova Area di Raggruppamento aggiunta alla griglia', 'amber');
     });
 
     dom.btnToolLink.addEventListener('click', () => {
@@ -3000,30 +2594,10 @@
       }
     });
 
-    document.getElementById('btn-zoom-in').addEventListener('click', () => {
-      zoomAtPoint(state.scale * 1.15, window.innerWidth / 2, window.innerHeight / 2);
-    });
-    document.getElementById('btn-zoom-out').addEventListener('click', () => {
-      zoomAtPoint(state.scale * 0.85, window.innerWidth / 2, window.innerHeight / 2);
-    });
-    document.getElementById('btn-zoom-reset').addEventListener('click', centerViewOnBoard);
-
     dom.btnSurfaceToggle.addEventListener('click', () => {
       state.boardSurface = state.boardSurface === 'anthracite' ? 'cork' : 'anthracite';
       applySurfaceTheme();
       saveState();
-    });
-
-    const commandsBanner = document.getElementById('hud-commands-banner');
-    document.getElementById('btn-toggle-commands-banner')?.addEventListener('click', () => {
-      if (!commandsBanner) return;
-      const isHidden = commandsBanner.classList.contains('!hidden');
-      state.commandsBannerDismissed = !isHidden;
-      commandsBanner.classList.toggle('!hidden', !isHidden);
-    });
-    document.getElementById('btn-close-commands-banner')?.addEventListener('click', () => {
-      state.commandsBannerDismissed = true;
-      commandsBanner?.classList.add('!hidden');
     });
 
     // Selection bar controls (works for 1 or more selected cards)
@@ -3034,6 +2608,13 @@
       e.target.value = '';
       if (val === '__new_group__') {
         createNewGroupWithCards(selectedIds);
+      } else if (val === '__unassigned__') {
+        selectedIds.forEach(cid => {
+          if (state.cardsState[cid]) state.cardsState[cid].groupId = null;
+        });
+        renderAll();
+        saveState();
+        showToast('Carte riportate in "Nuovi Reperti / Da Smistare"', 'stone');
       } else {
         addCardsToGroup(val, selectedIds);
       }
