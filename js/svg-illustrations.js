@@ -6,24 +6,26 @@
  */
 
 window.ProfilerIllustrations = {
-  render(imageSpec, category, cardNumber) {
+  render(imageSpec, category, cardNumber, options = {}) {
+    const showZoomHint = options.showZoomHint !== false;
     if (imageSpec && !imageSpec.startsWith('svg:')) {
       return `
-        <div class="relative w-full h-full overflow-hidden bg-[#efe8d8] flex items-center justify-center border border-stone-500/80 rounded-sm">
-          <img src="${imageSpec}" alt="Reperto ${cardNumber}" class="w-full h-full object-cover contrast-125 sepia-[.35]" loading="lazy" />
-          <div class="absolute inset-0 bg-gradient-to-t from-stone-900/35 via-transparent to-stone-900/15 pointer-events-none"></div>
-          <span class="absolute bottom-1 right-1.5 text-[9px] font-typewriter bg-[#efe8d8]/90 text-stone-900 border border-stone-600 px-1.5 rounded-sm">Tav. ${cardNumber}</span>
+        <div class="relative w-full h-full overflow-hidden bg-[#efe7d6] flex items-center justify-center border border-stone-500/80 rounded-sm">
+          <img src="${imageSpec}" alt="Reperto ${cardNumber}" class="w-full h-full object-contain contrast-125 sepia-[.35]" loading="lazy" />
+          <div class="absolute inset-0 bg-gradient-to-t from-stone-900/25 via-transparent to-transparent pointer-events-none"></div>
+          <span class="absolute bottom-1 left-1.5 text-[8.5px] font-typewriter bg-[#efe8d8]/90 text-stone-900 border border-stone-600/70 px-1.5 rounded-sm">Tav. ${cardNumber}</span>
+          ${showZoomHint ? `<span class="absolute bottom-1 right-1.5 text-[8.5px] font-mono-tech font-bold bg-stone-900/80 text-amber-300 border border-amber-500/50 px-1.5 py-0.2 rounded-sm pointer-events-none">🔎 Zoom</span>` : ''}
         </div>
       `;
     }
 
     const key = imageSpec ? imageSpec.replace('svg:', '') : this.defaultKeyForCategory(category);
     const bodySvg = this.templates[key] || this.templates[this.defaultKeyForCategory(category)];
-    const uid = String(cardNumber || '0').replace(/[^a-zA-Z0-9]/g, '') + '-' + key.replace(/[^a-zA-Z0-9]/g, '');
+    const uid = String(cardNumber || '0').replace(/[^a-zA-Z0-9]/g, '') + '-' + key.replace(/[^a-zA-Z0-9]/g, '') + '-' + (showZoomHint ? 'c' : 'z');
 
     return `
-      <div class="relative w-full h-full overflow-hidden bg-[#efe7d6] select-none flex items-center justify-center border border-stone-500/80 rounded-sm shadow-inner">
-        <svg viewBox="0 0 320 144" preserveAspectRatio="xMidYMid slice" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      <div class="relative w-full h-full overflow-hidden bg-[#ede3ce] select-none flex items-center justify-center border border-stone-500/80 rounded-sm shadow-inner group">
+        <svg viewBox="0 0 320 144" preserveAspectRatio="xMidYMid meet" class="w-full h-full block" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <!-- Warm Sketchbook Paper Background -->
             <radialGradient id="paper-grad-${uid}" cx="50%" cy="50%" r="70%">
@@ -58,9 +60,14 @@ window.ProfilerIllustrations = {
             ${bodySvg.replace(/__HATCH__/g, `url(#hatch-${uid})`).replace(/__CROSSHATCH__/g, `url(#crosshatch-${uid})`)}
           </g>
         </svg>
-        <div class="absolute top-1 left-1.5 text-[9px] font-typewriter font-bold tracking-wider text-stone-800 uppercase bg-[#f5efe2]/90 border border-stone-500/70 px-1.5 py-0.2 rounded-sm shadow-sm">
-          Tav. ${cardNumber} • ${category}
+        <div class="absolute bottom-1 left-1.5 text-[8.5px] font-typewriter font-bold tracking-wider text-stone-800 uppercase bg-[#f5efe2]/85 border border-stone-500/60 px-1.5 py-0.2 rounded-sm shadow-xs pointer-events-none">
+          Tav. ${cardNumber}
         </div>
+        ${showZoomHint ? `
+          <div class="absolute bottom-1 right-1.5 text-[8.5px] font-mono-tech font-bold bg-stone-900/80 group-hover:bg-amber-500 text-amber-300 group-hover:text-stone-950 border border-amber-500/50 px-1.5 py-0.2 rounded-sm shadow-xs transition pointer-events-none">
+            🔎 Ingrandisci
+          </div>
+        ` : ''}
       </div>
     `;
   },

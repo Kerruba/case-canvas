@@ -1191,8 +1191,8 @@
             <button type="button" class="btn-card-archive underline font-bold text-stone-800 cursor-pointer">Ripristina</button>
           </div>
         ` : isCollapsed ? '' : `
-          <!-- Forensic Illustration Preview (Larger & Clearer) -->
-          <div class="card-image-preview h-[112px] w-full px-2.5 pt-1.5 shrink-0 cursor-zoom-in" title="Doppio click per aprire la modale d'ispezione">
+          <!-- Forensic Illustration Preview (Proportional 20:9 Aspect Ratio + Click to Zoom) -->
+          <div class="card-image-preview aspect-[20/9] w-full px-2.5 pt-1.5 shrink-0 cursor-zoom-in" title="Clicca sul disegno per ingrandirlo con la lente (Zoom)">
             ${illustrationHtml}
           </div>
 
@@ -1362,9 +1362,14 @@
 
     const imgPreview = cardEl.querySelector('.card-image-preview');
     if (imgPreview) {
-      imgPreview.addEventListener('dblclick', e => {
+      imgPreview.addEventListener('mousedown', e => e.stopPropagation());
+      imgPreview.addEventListener('click', e => {
         e.stopPropagation();
-        openInspectModal(cardId);
+        if (state.toolMode === 'link' || state.linkStartCardId) {
+          handleCardLinkClick(cardId);
+          return;
+        }
+        openImageZoomModal(cardId);
       });
     }
 
@@ -1881,8 +1886,22 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Left column: High-Res Evidence Visual & Status -->
         <div class="lg:col-span-5 flex flex-col gap-4">
-          <div class="h-64 w-full rounded-lg overflow-hidden border-2 border-stone-700 shadow-inner bg-stone-950">
-            ${window.ProfilerIllustrations.render(card.image, card.category, card.number)}
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-[11px] font-mono-tech uppercase text-amber-400 font-bold">🎨 Tavola Illustrata (Zoom &amp; Trascina)</span>
+              <div class="flex items-center gap-1">
+                <button type="button" id="modal-img-zoom-out" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded text-[11px] font-mono-tech font-bold cursor-pointer" title="Riduci zoom disegno">－</button>
+                <span id="modal-img-zoom-label" class="text-[10px] font-mono-tech text-amber-300 min-w-[40px] text-center">100%</span>
+                <button type="button" id="modal-img-zoom-in" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded text-[11px] font-mono-tech font-bold cursor-pointer" title="Aumenta zoom disegno">＋</button>
+                <button type="button" id="modal-img-zoom-reset" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 rounded text-[10px] font-mono-tech cursor-pointer" title="Reset 100%">100%</button>
+                <button type="button" id="modal-img-fullscreen" class="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[10px] font-bold cursor-pointer" title="Apri il disegno a tutto schermo con la lente">⛶ Lente</button>
+              </div>
+            </div>
+            <div id="modal-img-viewport" class="aspect-[20/9] w-full rounded-lg overflow-hidden border-2 border-stone-700 shadow-inner bg-[#ede3ce] relative cursor-grab active:cursor-grabbing select-none" style="touch-action: none;" title="Usa la rotellina per zoomare • Trascina per muoverti nel disegno">
+              <div id="modal-img-stage" class="w-full h-full origin-center transition-transform duration-75">
+                ${window.ProfilerIllustrations.render(card.image, card.category, card.number, { showZoomHint: false })}
+              </div>
+            </div>
           </div>
 
           <div class="bg-stone-900/90 border border-stone-700/80 rounded-lg p-3.5 flex flex-col gap-2.5">
@@ -1957,6 +1976,21 @@
         </div>
       </div>
     `;
+
+    // Bind interactive zoom & pan on the illustration inside the Inspect Modal
+    bindInteractiveImageStage({
+      viewportEl: document.getElementById('modal-img-viewport'),
+      stageEl: document.getElementById('modal-img-stage'),
+      labelEl: document.getElementById('modal-img-zoom-label'),
+      btnIn: document.getElementById('modal-img-zoom-in'),
+      btnOut: document.getElementById('modal-img-zoom-out'),
+      btnReset: document.getElementById('modal-img-zoom-reset'),
+      maxScale: 4.5
+    });
+
+    document.getElementById('modal-img-fullscreen')?.addEventListener('click', () => {
+      openImageZoomModal(cardId);
+    });
 
     // Bind events inside inspect modal
     document.getElementById('modal-btn-collapse').addEventListener('click', () => {
@@ -2046,6 +2080,185 @@
     if (idx === -1) return;
     const nextIdx = (idx + dir + drawnCards.length) % drawnCards.length;
     openInspectModal(drawnCards[nextIdx].id);
+  }
+
+  /**
+   * Attaches interactive Zoom (100% -> 500%), Mouse Wheel Zoom, Drag-to-Pan,
+   * and Touch Pinch/Drag to any illustration viewport + stage container.
+   */
+  function bindInteractiveImageStage({ viewportEl, stageEl, labelEl, btnIn, btnOut, btnReset, maxScale = 5 }) {
+    if (!viewportEl || !stageEl) return null;
+    let scale = 1;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
+
+    function updateTransform() {
+      if (scale <= 1.01) {
+        scale = 1;
+        panX = 0;
+        panY = 0;
+      }
+      stageEl.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      if (labelEl) {
+        labelEl.textContent = `${Math.round(scale * 100)}%`;
+      }
+    }
+
+    function setZoom(newScale) {
+      scale = Math.min(maxScale, Math.max(1, newScale));
+      updateTransform();
+    }
+
+    btnIn?.addEventListener('click', e => {
+      e.stopPropagation();
+      setZoom(scale + 0.4);
+    });
+    btnOut?.addEventListener('click', e => {
+      e.stopPropagation();
+      setZoom(scale - 0.4);
+    });
+    btnReset?.addEventListener('click', e => {
+      e.stopPropagation();
+      scale = 1;
+      panX = 0;
+      panY = 0;
+      updateTransform();
+    });
+
+    viewportEl.onwheel = e => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.25 : -0.25;
+      setZoom(scale + delta);
+    };
+
+    viewportEl.onmousedown = e => {
+      if (e.button !== 0) return;
+      isDragging = true;
+      startX = e.clientX - panX;
+      startY = e.clientY - panY;
+    };
+
+    viewportEl.ondblclick = e => {
+      e.stopPropagation();
+      if (scale > 1.1) {
+        scale = 1;
+        panX = 0;
+        panY = 0;
+      } else {
+        scale = 2.2;
+      }
+      updateTransform();
+    };
+
+    window.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      panX = e.clientX - startX;
+      panY = e.clientY - startY;
+      updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    viewportEl.ontouchstart = e => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        pinchStartDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        pinchStartScale = scale;
+      } else if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - panX;
+        startY = e.touches[0].clientY - panY;
+      }
+    };
+
+    viewportEl.ontouchmove = e => {
+      if (e.touches.length === 2 && pinchStartDist > 0) {
+        e.preventDefault();
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        setZoom(pinchStartScale * (dist / pinchStartDist));
+      } else if (e.touches.length === 1 && isDragging && scale > 1) {
+        e.preventDefault();
+        panX = e.touches[0].clientX - startX;
+        panY = e.touches[0].clientY - startY;
+        updateTransform();
+      }
+    };
+
+    viewportEl.ontouchend = () => {
+      isDragging = false;
+      pinchStartDist = 0;
+    };
+
+    updateTransform();
+    return { setZoom, reset: () => { scale = 1; panX = 0; panY = 0; updateTransform(); } };
+  }
+
+  function openImageZoomModal(cardId) {
+    if (!state.scenario) return;
+    const card = state.scenario.cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    const modalEl = document.getElementById('image-zoom-modal');
+    const titleEl = document.getElementById('img-zoom-title');
+    const viewportEl = document.getElementById('img-zoom-viewport');
+    const stageEl = document.getElementById('img-zoom-stage');
+    const labelEl = document.getElementById('img-zoom-level');
+    const btnOpenCard = document.getElementById('btn-img-zoom-open-card');
+
+    if (!modalEl || !viewportEl || !stageEl) return;
+
+    if (titleEl) {
+      titleEl.textContent = `Tavola ${card.number} — ${card.title} (${card.category})`;
+    }
+
+    stageEl.innerHTML = `
+      <div class="w-full max-w-5xl aspect-[20/9] shadow-2xl rounded overflow-hidden border-2 border-stone-600">
+        ${window.ProfilerIllustrations.render(card.image, card.category, card.number, { showZoomHint: false })}
+      </div>
+    `;
+
+    // Replace buttons to avoid duplicate listeners across opens
+    const btnInOld = document.getElementById('btn-img-zoom-in');
+    const btnOutOld = document.getElementById('btn-img-zoom-out');
+    const btnResetOld = document.getElementById('btn-img-zoom-reset');
+    const btnIn = btnInOld.cloneNode(true);
+    const btnOut = btnOutOld.cloneNode(true);
+    const btnReset = btnResetOld.cloneNode(true);
+    btnInOld.replaceWith(btnIn);
+    btnOutOld.replaceWith(btnOut);
+    btnResetOld.replaceWith(btnReset);
+
+    if (btnOpenCard) {
+      btnOpenCard.onclick = () => {
+        modalEl.classList.add('hidden');
+        openInspectModal(cardId);
+      };
+    }
+
+    bindInteractiveImageStage({
+      viewportEl,
+      stageEl,
+      labelEl,
+      btnIn,
+      btnOut,
+      btnReset,
+      maxScale: 5
+    });
+
+    modalEl.classList.remove('hidden');
   }
 
   function openDossierModal() {
@@ -2501,6 +2714,7 @@
         dom.inspectModal.classList.add('hidden');
         dom.dossierModal.classList.add('hidden');
         dom.solveModal.classList.add('hidden');
+        document.getElementById('image-zoom-modal')?.classList.add('hidden');
         closeStringModal();
         closeTimelineModal();
         renderCards();
