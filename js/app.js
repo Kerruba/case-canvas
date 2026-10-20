@@ -762,17 +762,6 @@
     state.maxZIndex += 1;
 
     if (!state.cardsState[cardObj.id]) {
-      let spawnX, spawnY;
-      if (isInitial) {
-        spawnX = 75;
-        spawnY = 85;
-      } else {
-        const centerWorld = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
-        const offsetIdx = (state.drawnCount - 1) % 6;
-        spawnX = Math.round(centerWorld.x - 120 + (offsetIdx - 2.5) * 32);
-        spawnY = Math.round(centerWorld.y - 160 + (offsetIdx - 2.5) * 22);
-      }
-
       state.cardsState[cardObj.id] = {
         groupId: null,
         note: '',
@@ -788,8 +777,7 @@
     state.selectedCards.clear();
     state.selectedCards.add(cardObj.id);
 
-    renderCards();
-    renderGroups();
+    renderBoard();
     renderDeckUI();
     updateMultiSelectToolbar();
     saveState();
@@ -935,11 +923,22 @@
 
   function renderAll() {
     renderTimeline();
-    renderGroups();
-    renderCards();
-    renderStrings();
+    renderBoard();
     renderDeckUI();
     updateMultiSelectToolbar();
+  }
+
+  function renderBoard() {
+    renderGroupsDOM();
+    renderCardsDOM();
+  }
+
+  function renderGroups() {
+    renderBoard();
+  }
+
+  function renderCards() {
+    renderBoard();
   }
 
   function getCardDimensions(cs) {
@@ -990,7 +989,7 @@
     });
   }
 
-  function renderGroups() {
+  function renderGroupsDOM() {
     dom.groupsLayer.innerHTML = '';
 
     state.groups.forEach(group => {
@@ -1067,7 +1066,7 @@
     }
   }
 
-  function renderCards() {
+  function renderCardsDOM() {
     if (!state.scenario) return;
     dom.cardsLayer.innerHTML = '';
     state.groups.forEach(group => {
@@ -1756,8 +1755,10 @@
     const conn = state.connections.find(c => c.id === state.editingStringId);
     if (conn) {
       conn.label = dom.stringLabelInput.value.trim();
-      renderCards();
-      renderStrings();
+      renderBoard();
+      if (state.inspectedCardId && !dom.inspectModal.classList.contains('hidden')) {
+        openInspectModal(state.inspectedCardId);
+      }
       saveState();
     }
     closeStringModal();
@@ -1765,8 +1766,10 @@
 
   function deleteActiveString() {
     state.connections = state.connections.filter(c => c.id !== state.editingStringId);
-    renderCards();
-    renderStrings();
+    renderBoard();
+    if (state.inspectedCardId && !dom.inspectModal.classList.contains('hidden')) {
+      openInspectModal(state.inspectedCardId);
+    }
     saveState();
     closeStringModal();
     showToast('Filo rosso rimosso', 'stone');
@@ -1786,9 +1789,7 @@
     if (!cs) return;
     cs.collapsed = !cs.collapsed;
     if (cs.collapsed) cs.archived = false;
-    renderCards();
-    renderStrings();
-    renderGroups();
+    renderBoard();
     saveState();
   }
 
@@ -2701,6 +2702,7 @@
   }
 
   function updateToolButtons() {
+    if (!dom.btnToolSelect) return;
     if (state.toolMode === 'select') {
       dom.btnToolSelect.className = 'px-3 py-1.5 bg-sky-600 text-white border border-sky-400 rounded-md text-xs font-bold shadow transition flex items-center gap-1.5';
     } else {
