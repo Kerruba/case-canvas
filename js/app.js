@@ -1057,8 +1057,9 @@
     });
 
     const totalCoincidences = slotCoincidences.filter(s => s.isCoincidence).length;
-    const colWidth = Math.max(145, Math.min(185, Math.floor(820 / Math.max(1, sortedSlots.length))));
     const trackColWidth = 195;
+    const fullAvailable = dom.timelineContentArea ? Math.max(900, dom.timelineContentArea.clientWidth - trackColWidth - 40) : 1000;
+    const colWidth = Math.max(145, Math.min(220, Math.floor(fullAvailable / Math.max(1, sortedSlots.length))));
     const gridTemplateCols = `${trackColWidth}px repeat(${sortedSlots.length}, minmax(${colWidth}px, 1fr))`;
 
     // 3. Render Gantt Grid

@@ -93,43 +93,48 @@
   </header>
 
   <!-- =====================================================================
-       TOP TIMELINE BAR (SINGOLA DI DEFAULT, MULTI-TIMELINE PARALLELA GANTT OPZIONALE)
+       TOP TIMELINE BAR (TOOLBAR MENU SOPRA, TIMELINE A TUTTO SCHERMO ORIZZONTALE SOTTO)
        ===================================================================== -->
-  <section id="timeline-bar" class="relative shrink-0 z-40 bg-stone-950/95 backdrop-blur-md border-b border-stone-800/90 px-3 sm:px-4 py-1.5 shadow-lg transition-all">
-    <div id="timeline-bar-layout" class="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
-      <!-- Header & Controls -->
-      <div id="timeline-header-controls" class="flex flex-wrap items-center justify-between md:justify-start gap-1.5 sm:gap-2 shrink-0 md:border-r md:border-stone-800 md:pr-3">
+  <section id="timeline-bar" class="relative shrink-0 z-40 bg-stone-950/95 backdrop-blur-md border-b border-stone-800/90 px-3 sm:px-4 py-1.5 shadow-lg transition-all flex flex-col gap-1.5">
+    <!-- Top Controls Toolbar (Disposto sopra la timeline per non rubare spazio orizzontale) -->
+    <div id="timeline-header-controls" class="w-full flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-stone-800/70">
+      <!-- Left: Title, Badges & View Indicator -->
+      <div class="flex items-center gap-2 flex-wrap">
         <button id="btn-toggle-timeline-bar" type="button" class="text-xs font-mono-tech font-extrabold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 cursor-pointer" title="Mostra/Nascondi la sezione Linea del Tempo">
           <span>⏱️ TIMELINE</span>
           <span id="timeline-count-badge" class="text-[10px] bg-stone-800 text-stone-300 px-1.5 py-0.2 rounded border border-stone-700" title="Numero totale di eventi">0</span>
           <span id="timeline-tracks-badge" class="hidden text-[10px] bg-sky-950/90 text-sky-300 px-1.5 py-0.2 rounded border border-sky-500/50" title="Linee del tempo parallele attive (vista Gantt)">1 linea</span>
           <span id="timeline-chevron" class="text-[10px] text-stone-400">▴</span>
         </button>
-        <div class="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
-          <!-- Current view indicator label -->
-          <div class="flex items-center gap-1 text-[10px] font-mono-tech bg-stone-900 border border-stone-800 px-1.5 py-0.5 rounded text-stone-400 shrink-0">
-            <span>Visualizzazione:</span>
-            <span id="timeline-view-label" class="font-bold text-amber-400">Gantt</span>
-          </div>
 
-          <!-- Switch button showing destination view -->
-          <button id="btn-toggle-timeline-view" type="button" class="px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-200 hover:text-amber-300 border border-stone-700 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer shrink-0" title="Passa alla visualizzazione alternativa">
-            <span>⏱️ Passa a Punti</span>
-          </button>
-          <button id="btn-add-timeline-event" type="button" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0" title="Aggiungi un nuovo pallino o intervallo orario sulla linea del tempo">
-            + Pallino
-          </button>
-          <button id="btn-add-timeline-track" type="button" class="px-2.5 py-1 bg-sky-500/20 hover:bg-sky-500/35 text-sky-300 border border-sky-500/50 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0" title="Aggiungi una linea del tempo parallela (stile Gantt) per confrontare come combaciano le tempistiche">
-            + Linea Parallela
-          </button>
+        <div class="h-3.5 w-px bg-stone-800 hidden sm:block"></div>
+
+        <!-- Current view indicator label -->
+        <div class="flex items-center gap-1 text-[10px] font-mono-tech bg-stone-900 border border-stone-800 px-2 py-0.5 rounded text-stone-400 shrink-0">
+          <span>Visualizzazione:</span>
+          <span id="timeline-view-label" class="font-bold text-amber-400">Gantt</span>
         </div>
       </div>
 
-      <!-- Responsive Timeline Track / Multi-Track Gantt Area -->
-      <div id="timeline-content-area" class="flex-1 min-w-0 max-h-64 md:max-h-72 overflow-y-auto overflow-x-auto timeline-scroll evidence-scroll">
-        <div id="timeline-nodes-container" class="relative flex flex-col md:flex-row md:items-center gap-2 md:min-h-[62px] py-1 md:py-0 px-1 md:px-2">
-          <!-- Populated dynamically by js/app.js -->
-        </div>
+      <!-- Right: Action Buttons -->
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <!-- Switch button showing destination view -->
+        <button id="btn-toggle-timeline-view" type="button" class="px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-200 hover:text-amber-300 border border-stone-700 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer shrink-0" title="Passa alla visualizzazione alternativa">
+          <span>⏱️ Passa a Punti</span>
+        </button>
+        <button id="btn-add-timeline-event" type="button" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0" title="Aggiungi un nuovo pallino o intervallo orario sulla linea del tempo">
+          + Pallino
+        </button>
+        <button id="btn-add-timeline-track" type="button" class="px-2.5 py-1 bg-sky-500/20 hover:bg-sky-500/35 text-sky-300 border border-sky-500/50 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0" title="Aggiungi una linea del tempo parallela (stile Gantt) per confrontare come combaciano le tempistiche">
+          + Linea Parallela
+        </button>
+      </div>
+    </div>
+
+    <!-- Responsive Timeline Track / Multi-Track Gantt Area (Occupa tutto lo spazio orizzontale) -->
+    <div id="timeline-content-area" class="w-full min-w-0 max-h-64 md:max-h-72 overflow-y-auto overflow-x-auto timeline-scroll evidence-scroll pt-0.5">
+      <div id="timeline-nodes-container" class="relative w-full flex flex-col md:flex-row md:items-center gap-2 md:min-h-[62px] py-1 md:py-0 px-1 md:px-2">
+        <!-- Populated dynamically by js/app.js -->
       </div>
     </div>
   </section>
