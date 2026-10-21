@@ -106,6 +106,9 @@
           <span id="timeline-chevron" class="text-[10px] text-stone-400">▴</span>
         </button>
         <div class="flex items-center gap-1.5">
+          <button id="btn-toggle-timeline-view" type="button" class="px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-amber-300 border border-stone-700 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer" title="Passa tra Vista Gantt (con barre d'intervallo) e Vista Classica a pallini">
+            📊 Gantt
+          </button>
           <button id="btn-add-timeline-event" type="button" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer" title="Aggiungi un nuovo pallino o intervallo orario sulla linea del tempo">
             + Pallino
           </button>
@@ -373,6 +376,16 @@
               <option value="">— Nessuna carta —</option>
             </select>
           </div>
+        </div>
+
+        <!-- Quick Duration Presets to easily set Gantt intervals -->
+        <div class="flex items-center gap-1.5 -mt-1">
+          <span class="text-[9.5px] font-mono-tech text-stone-400 uppercase">Intervallo Gantt:</span>
+          <button type="button" data-tl-duration-add="15" class="px-1.5 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-300 border border-stone-700 text-[9.5px] font-mono-tech font-bold cursor-pointer">+15 min</button>
+          <button type="button" data-tl-duration-add="30" class="px-1.5 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-300 border border-stone-700 text-[9.5px] font-mono-tech font-bold cursor-pointer">+30 min</button>
+          <button type="button" data-tl-duration-add="45" class="px-1.5 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-300 border border-stone-700 text-[9.5px] font-mono-tech font-bold cursor-pointer">+45 min</button>
+          <button type="button" data-tl-duration-add="60" class="px-1.5 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-300 border border-stone-700 text-[9.5px] font-mono-tech font-bold cursor-pointer">+1 ora</button>
+          <button type="button" id="btn-tl-clear-endtime" class="ml-auto text-[9.5px] font-mono-tech text-stone-400 hover:text-red-400 cursor-pointer" title="Rimuovi orario di fine">✕ Resetta fine</button>
         </div>
 
         <div>

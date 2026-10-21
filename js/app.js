@@ -158,6 +158,7 @@
     connections: [],    // [{ id, from, to, label }]
     timelineTracks: getDefaultTimelineTracks(), // [{ id, title, color }]
     timelineEvents: [], // [{ id, trackId, time, endTime, label, cardId, color }]
+    timelineViewMode: 'auto', // 'auto' (Gantt if multi-track or has intervals) | 'gantt' | 'classic'
     timelineCollapsed: false,
     activeTimelineTrackId: 'tl-track-main',
     panX: 60,
@@ -212,6 +213,7 @@
     dom.timelineTracksBadge = document.getElementById('timeline-tracks-badge');
     dom.timelineChevron = document.getElementById('timeline-chevron');
     dom.btnAddTimelineTrack = document.getElementById('btn-add-timeline-track');
+    dom.btnToggleTimelineView = document.getElementById('btn-toggle-timeline-view');
 
     // Bottom-right Deck Widget
     dom.deckCountText = document.getElementById('deck-count-text');
@@ -327,6 +329,7 @@
           }
         });
         state.timelineCollapsed = Boolean(parsed.timelineCollapsed);
+        state.timelineViewMode = parsed.timelineViewMode || 'auto';
         state.panX = parsed.panX ?? 50;
         state.panY = parsed.panY ?? 20;
         state.scale = parsed.scale ?? 1.0;
@@ -409,6 +412,7 @@
     state.connections = [];
     state.timelineTracks = getDefaultTimelineTracks();
     state.timelineEvents = [];
+    state.timelineViewMode = 'auto';
     state.timelineCollapsed = window.innerWidth < 640;
     state.panX = window.innerWidth < 640 ? 16 : 50;
     state.panY = 20;
@@ -438,6 +442,7 @@
       connections: state.connections,
       timelineTracks: state.timelineTracks,
       timelineEvents: state.timelineEvents,
+      timelineViewMode: state.timelineViewMode,
       timelineCollapsed: state.timelineCollapsed,
       panX: state.panX,
       panY: state.panY,
@@ -814,19 +819,58 @@
     showToast(`Carta nota ${target.number} eliminata dalla lavagna`, 'stone');
   }
 
+  function formatTimeDuration(startTime, endTime) {
+    if (!startTime || !endTime) return '';
+    const s = parseSingleTimePoint(startTime, true).sortKey;
+    const e = parseSingleTimePoint(endTime, true).sortKey;
+    if (e <= s) return '';
+    const diffMins = e - s;
+    const h = Math.floor(diffMins / 60);
+    const m = diffMins % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  }
+
   function renderTimeline() {
     if (!dom.timelineNodesContainer) return;
 
     const count = state.timelineEvents.length;
     const tracksCount = Array.isArray(state.timelineTracks) ? state.timelineTracks.length : 1;
+    const hasIntervals = state.timelineEvents.some(e => e.endTime && e.endTime.trim().length > 0);
 
     if (dom.timelineCountBadge) {
       dom.timelineCountBadge.textContent = String(count);
     }
 
+    let isGanttMode = false;
+    if (state.timelineViewMode === 'gantt') {
+      isGanttMode = true;
+    } else if (state.timelineViewMode === 'classic') {
+      isGanttMode = false;
+    } else {
+      // 'auto' mode: Gantt if multi-track OR if any event has an interval!
+      isGanttMode = tracksCount > 1 || hasIntervals;
+    }
+
+    if (dom.btnToggleTimelineView) {
+      if (isGanttMode) {
+        dom.btnToggleTimelineView.innerHTML = `📊 Gantt <span class="text-[9px] text-amber-400 font-bold">ON</span>`;
+        dom.btnToggleTimelineView.className = 'px-2 py-1 bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/70 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer';
+        dom.btnToggleTimelineView.title = 'Modalità Gantt attiva con barre d\'intervallo (clicca per passare alla vista a pallini)';
+      } else {
+        dom.btnToggleTimelineView.innerHTML = `⏱️ Pallini`;
+        dom.btnToggleTimelineView.className = 'px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white border border-stone-700 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer';
+        dom.btnToggleTimelineView.title = 'Modalità classica a pallini attiva (clicca per passare alla vista Gantt con barre d\'intervallo)';
+      }
+    }
+
     if (dom.timelineTracksBadge) {
       if (tracksCount > 1) {
         dom.timelineTracksBadge.textContent = `${tracksCount} linee (Gantt)`;
+        dom.timelineTracksBadge.classList.remove('hidden');
+      } else if (hasIntervals || isGanttMode) {
+        dom.timelineTracksBadge.textContent = `1 linea (Gantt)`;
         dom.timelineTracksBadge.classList.remove('hidden');
       } else {
         dom.timelineTracksBadge.classList.add('hidden');
@@ -852,12 +896,10 @@
       return;
     }
 
-    // Branch 1: Single Default Timeline (Clean, compact layout)
-    if (tracksCount <= 1) {
-      renderSingleTrackTimeline();
-    } else {
-      // Branch 2: Multi-Timeline Parallel Gantt View (Synchronized Chronological Matrix)
+    if (isGanttMode) {
       renderParallelGanttTimeline();
+    } else {
+      renderSingleTrackTimeline();
     }
   }
 
@@ -875,17 +917,19 @@
       const cStyle = TIMELINE_DOT_COLORS[ev.color] || TIMELINE_DOT_COLORS.amber;
       const linkedCard = ev.cardId ? findCardById(ev.cardId) : null;
       const isCardSelected = ev.cardId && state.selectedCards.has(ev.cardId);
+      const dur = ev.endTime ? formatTimeDuration(ev.time, ev.endTime) : '';
       const displayTime = ev.endTime ? `${ev.time} → ${ev.endTime}` : ev.time;
 
       const node = document.createElement('div');
       node.className = `timeline-node shrink-0 ${isCardSelected ? 'is-highlighted' : ''}`;
-      node.title = `${displayTime} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nClicca per modificare • Clicca sul badge carta per raggiungerla`;
+      node.title = `${displayTime}${dur ? ' (' + dur + ')' : ''} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nClicca per modificare • Clicca sul badge carta per raggiungerla`;
 
       node.innerHTML = `
         <!-- Desktop/Tablet Horizontal Node Layout (md:flex) -->
         <div class="hidden md:flex flex-col items-center w-full">
-          <div class="font-mono-tech font-extrabold text-[10.5px] ${cStyle.timeText} leading-none mb-1.5 tracking-tight">
-            ${escapeHtml(displayTime)}
+          <div class="font-mono-tech font-extrabold text-[10.5px] ${cStyle.timeText} leading-none mb-1.5 tracking-tight flex items-center gap-1">
+            <span>${escapeHtml(displayTime)}</span>
+            ${dur ? `<span class="text-[8.5px] bg-stone-900 border border-stone-700 text-amber-300 px-1 rounded font-normal">⏱️ ${dur}</span>` : ''}
           </div>
           <div class="timeline-dot ${cStyle.dotBg}"></div>
           <div class="mt-1.5 flex flex-col items-center max-w-[155px]">
@@ -907,8 +951,9 @@
           <div class="flex items-center gap-2.5 min-w-0">
             <div class="timeline-dot shrink-0 ${cStyle.dotBg}"></div>
             <div class="min-w-0">
-              <div class="font-mono-tech font-extrabold text-[11px] ${cStyle.timeText} leading-tight">
-                ${escapeHtml(displayTime)}
+              <div class="font-mono-tech font-extrabold text-[11px] ${cStyle.timeText} leading-tight flex items-center gap-1">
+                <span>${escapeHtml(displayTime)}</span>
+                ${dur ? `<span class="text-[9px] bg-stone-900 border border-stone-700 text-amber-300 px-1 rounded font-normal">⏱️ ${dur}</span>` : ''}
               </div>
               <div class="text-xs font-medium text-stone-200 break-words leading-snug">
                 ${escapeHtml(ev.label)}
@@ -1108,15 +1153,17 @@
 
         if (isSpan) {
           // Gantt Interval Span Bar (e.g. 21:00 - 21:45)
+          const dur = formatTimeDuration(ev.time, ev.endTime);
           evEl.className = `gantt-span-bar ${evColor.barBg} ${isCardSelected ? 'ring-2 ring-sky-400' : ''}`;
           evEl.style.gridColumn = `${startCol} / ${endCol}`;
-          evEl.title = `${ev.time} → ${ev.endTime} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nTrascina per spostare su un'altra linea • Clicca per modificare`;
+          evEl.title = `${ev.time} → ${ev.endTime}${dur ? ' (' + dur + ')' : ''} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nTrascina per spostare su un'altra linea • Clicca per modificare`;
 
           evEl.innerHTML = `
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-1.5 min-w-0">
                 <span class="w-2 h-2 rounded-full ${evColor.dotBg} shrink-0"></span>
                 <span class="font-mono-tech font-extrabold text-[10px] leading-none shrink-0 tracking-tight">${escapeHtml(ev.time)} → ${escapeHtml(ev.endTime)}</span>
+                ${dur ? `<span class="px-1.5 py-0.2 rounded bg-black/50 text-[8.5px] font-mono-tech font-bold text-amber-300 border border-white/10 shrink-0">⏱️ ${dur}</span>` : ''}
                 <span class="text-[10px] font-semibold truncate leading-tight">${escapeHtml(ev.label)}</span>
               </div>
               ${linkedCard ? `
@@ -3591,6 +3638,18 @@
       saveState();
     });
 
+    dom.btnToggleTimelineView?.addEventListener('click', () => {
+      if (state.timelineViewMode === 'gantt') {
+        state.timelineViewMode = 'classic';
+        showToast('Passato alla vista classica a pallini', 'stone');
+      } else {
+        state.timelineViewMode = 'gantt';
+        showToast('Passato alla vista Gantt (con barre d\'intervallo)', 'amber');
+      }
+      renderTimeline();
+      saveState();
+    });
+
     document.getElementById('btn-add-timeline-event').addEventListener('click', () => {
       const selectedCardId = state.selectedCards.size === 1 ? Array.from(state.selectedCards)[0] : '';
       const card = selectedCardId ? findCardById(selectedCardId) : null;
@@ -3611,6 +3670,33 @@
     dom.btnModalAddTrack?.addEventListener('click', () => {
       const created = addTimelineTrack();
       populateTimelineTrackSelect(created.id);
+    });
+
+    document.querySelectorAll('[data-tl-duration-add]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const addMins = parseInt(btn.dataset.tlDurationAdd, 10);
+        const startVal = dom.tlTimeInput.value.trim();
+        if (!startVal) {
+          showToast('Inserisci prima un orario di inizio (es. 21:00)', 'amber');
+          dom.tlTimeInput.focus();
+          return;
+        }
+        const match = startVal.match(/(\d{1,2})[:.](\d{2})/);
+        if (!match) return;
+        let h = parseInt(match[1], 10);
+        let m = parseInt(match[2], 10);
+        let total = h * 60 + m + addMins;
+        let newH = Math.floor(total / 60) % 24;
+        let newM = total % 60;
+        if (dom.tlEndTimeInput) {
+          dom.tlEndTimeInput.value = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+          dom.tlEndTimeInput.focus();
+        }
+      });
+    });
+
+    document.getElementById('btn-tl-clear-endtime')?.addEventListener('click', () => {
+      if (dom.tlEndTimeInput) dom.tlEndTimeInput.value = '';
     });
 
     dom.tlColorPicker.querySelectorAll('[data-tl-color]').forEach(btn => {
