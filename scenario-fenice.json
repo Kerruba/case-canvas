@@ -109,7 +109,7 @@
       "category": "Forense",
       "timestamp": "22 Nov • Ore 01:20",
       "image": "svg:fenice-autopsy",
-      "rawText": "• COLPO DI SCENA 1 — Stomaco vittima: 0,0 ml di Champagne e 0,0 mg di Digitalina.\n• COLPO DI SCENA 2 — Ferita al petto da stiletto di Murano: margini completamente ESANGUI (assenza totale di reazione vitale). La pugnalata è stata inflitta POST-MORTEM su un cadavere già morto da oltre 35 minuti!\n• VERA CAUSA MORTE: micro-puntura profonda 1,8 mm sul polpastrello dell'indice DESTRO con tracce di Tetrodotossina pura e olio sintetico Moebius 9010.\n• Holter cardiaco vittima: arresto cardiaco fulminante registrato alle ore 22:14:18."
+      "rawText": "• Stomaco vittima: 0,0 ml di Champagne e 0,0 mg di Digitalina.\n• Ferita al petto da stiletto di Murano: margini completamente ESANGUI (assenza totale di reazione vitale). La lesione è stata inflitta POST-MORTEM su un soggetto già deceduto da oltre 35 minuti.\n• Esame cutaneo: micro-puntura profonda 1,8 mm sul polpastrello dell'indice DESTRO con tracce di Tetrodotossina pura e olio sintetico Moebius 9010.\n• Holter cardiaco vittima: arresto cardiaco fulminante registrato alle ore 22:14:18."
     },
     {
       "id": "fen-07",
@@ -181,7 +181,7 @@
       "category": "Forense",
       "timestamp": "22 Nov • Ore 04:30",
       "image": "svg:fenice-automaton",
-      "rawText": "• COLPO DI SCENA 3 — L'ispezione microscopica della chiavetta d'oro di carica dell'Automa rivela una modifica micromeccanica letale:\n• All'interno dell'albero cavo della chiavetta è stato fresato un alloggiamento con molla a scatto calibrata sul 3° giro di carica.\n• Al terzo giro completo (eseguito dal Maestro alle 22:13), un micro-ago chirurgico da 0,2 mm intriso di Tetrodotossina e olio Moebius 9010 scatta fuori dal foro dell'impugnatura, pungendo il polpastrello dell'indice destro di chi gira la chiave!"
+      "rawText": "• L'ispezione microscopica della chiavetta d'oro di carica dell'Automa rivela una modifica micromeccanica interna:\n• All'interno dell'albero cavo della chiavetta è stato fresato un alloggiamento con molla a scatto calibrata sul 3° giro di carica.\n• Al terzo giro completo (eseguito dal Maestro alle 22:13), un micro-ago chirurgico da 0,2 mm intriso di Tetrodotossina e olio Moebius 9010 scatta fuori dal foro dell'impugnatura, pungendo il polpastrello dell'indice destro di chi gira la chiave."
     },
     {
       "id": "fen-15",
@@ -199,13 +199,13 @@
       "category": "Documento",
       "timestamp": "22 Nov • Ore 05:45",
       "image": "svg:fenice-xrf-report",
-      "rawText": "• L'analisi spettrometrica XRF sull'Automa 'L'Orfeo d'Oro' svela il movente: il movimento interno NON è quello originale del 1768, ma una replica moderna in ottone al piombo lavorata a controllo numerico (CNC) nel 2026!\n• Email sul telefono del Maestro Contarini (inviata ore 18:50 a Marin): «Ettore, il suono del carillon è cambiato. Domani mattina alle 09:00 i periti assicurativi eseguiranno la scansione metallurgica XRF sull'Automa».\n• Rogatoria bancaria: Ettore Marin aveva venduto il vero meccanismo del 1768 a un collezionista di Ginevra il 4 Novembre per 1.200.000 CHF."
+      "rawText": "• L'analisi spettrometrica XRF sull'Automa 'L'Orfeo d'Oro' rivela che il movimento interno NON è quello originale del 1768, ma una replica moderna in ottone al piombo lavorata a controllo numerico (CNC) nel 2026.\n• Email sul telefono del Maestro Contarini (inviata ore 18:50 a Marin): «Ettore, il suono del carillon è cambiato. Domani mattina alle 09:00 i periti assicurativi eseguiranno la scansione metallurgica XRF sull'Automa».\n• Rogatoria bancaria: Ettore Marin aveva venduto il vero meccanismo del 1768 a un collezionista di Ginevra il 4 Novembre per 1.200.000 CHF."
     }
   ],
   "solution": [
     {
       "id": "fq1",
-      "question": "1. Chi è il vero assassino che ha causato la morte del Maestro Aurelio Contarini?",
+      "question": "1. Chi ha ucciso il Maestro Aurelio Contarini?",
       "options": [
         "Flavia De Santis (Prima Soprano)",
         "Davide Moretti (Primo Violino)",
@@ -217,7 +217,7 @@
     },
     {
       "id": "fq2",
-      "question": "2. Qual è stata la vera causa della morte e a che ora esatta è deceduto il Maestro?",
+      "question": "2. Qual è stata l'effettiva causa della morte e a che ora è deceduto il Maestro?",
       "options": [
         "Trauma cardiaco da stiletto in vetro di Murano alle ore 22:52",
         "Avvelenamento da Digitalina nello Champagne Rosé alle ore 21:35",
@@ -229,7 +229,7 @@
     },
     {
       "id": "fq3",
-      "question": "3. Perché il cadavere aveva uno stiletto di Murano conficcato nel petto se era già morto avvelenato?",
+      "question": "3. Come si spiega la presenza dello stiletto in vetro di Murano nel petto della vittima?",
       "options": [
         "È stato Ettore Marin alle 19:30 prima dell'inizio dell'opera",
         "Davide Moretti si è introdotto dal condotto acustico alle 22:52 per rubare la lettera di denuncia e, nel buio, ha colpito il corpo già morto da 38 minuti",
@@ -241,7 +241,7 @@
     },
     {
       "id": "fq4",
-      "question": "4. Come si spiega l'enigma della 'camera chiusa' (chiavistello interno bloccato) se sia l'assassino sia gli altri sospettati erano fuori alle 23:15?",
+      "question": "4. Come si spiega il chiavistello interno bloccato del Camerino n. 1 alle 23:15?",
       "options": [
         "Il Maestro si è chiuso dentro prima di caricare l'Automa e nessuno è più entrato",
         "Ettore Marin aveva costruito un chiavistello magnetico telecomandato",
@@ -253,19 +253,19 @@
     },
     {
       "id": "fq5",
-      "question": "5. Chi aveva avvelenato la coppa di Champagne con la Digitalina e perché non ha ucciso il Maestro?",
+      "question": "5. Qual è la dinamica relativa alla coppa di Champagne Rosé trovata sul tavolo?",
       "options": [
-        "Lorenzo Grimaldi, ma la coppa è evaporata per il caldo del camerino",
-        "Flavia De Santis alle 21:35 per evitare l'esclusione dalla tournée, ma il Maestro (astemio prima di dirigere) non ne ha bevuto nemmeno un sorso",
-        "Valeria Contarini per ereditare il patrimonio paterno",
-        "Ettore Marin come piano di riserva nel caso l'Automa non funzionasse"
+        "Lorenzo Grimaldi l'aveva avvelenata, ma la coppa è evaporata per il caldo del camerino",
+        "Flavia De Santis l'aveva avvelenata con Digitalina alle 21:35 per evitare l'esclusione dalla tournée, ma il Maestro (astemio prima di dirigere) non ne ha bevuto nemmeno un sorso",
+        "Valeria Contarini l'aveva avvelenata per ereditare il patrimonio paterno",
+        "Ettore Marin l'aveva avvelenata come piano di riserva"
       ],
       "correctOptionIndex": 1,
       "explanation": "La soprano Flavia De Santis ha versato 120 mg della propria Digitalina nella coppa con bordo dorato alle 21:35 (Carte #04, #05, #11), ma il Maestro non beveva mai alcolici prima di dirigere e lo stomaco è risultato completamente vuoto (0,0 ml di Champagne e 0,0 mg di Digitalina, Carta #06)."
     },
     {
       "id": "fq6",
-      "question": "6. Qual era il vero movente dell'Ing. Ettore Marin per assassinare il Maestro proprio la sera del 21 Novembre?",
+      "question": "6. Qual era il vero movente dell'assassino per colpire proprio la sera del 21 Novembre?",
       "options": [
         "Un debito di gioco contratto con il Sovrintendente Grimaldi",
         "Impedire la perizia spettrometrica XRF fissata per l'indomani mattina, che avrebbe scoperto il furto del meccanismo originale del 1768 venduto a Ginevra per 1.200.000 CHF",

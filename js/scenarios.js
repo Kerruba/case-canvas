@@ -207,19 +207,19 @@ window.ProfilerScenarios = {
           },
           {
             "id": "q4",
-            "question": "4. Chi ha tentato (senza successo) di avvelenare la vittima con il caffè alla Tassina B e come ha cercato di depistare le indagini?",
+            "question": "4. Quale altro tentativo o depistaggio è avvenuto in serata riguardo alla tazzina di caffè?",
             "options": [
-              "Clara Valli, usando il codice di Beatrice per entrare nella serra",
-              "Lorenzo Morosini, entrando dalla finestra con l'impermeabile verde oliva",
-              "Beatrice Sartori, preparando l'infuso di Taxus in serra (21:22-21:38) con l'impermeabile di Clara e posando la tazzina a destra",
-              "Matteo Rinaldi, preparando due veleni diversi per sicurezza"
+              "Clara Valli ha avvelenato il caffè usando il codice di Beatrice per entrare nella serra",
+              "Lorenzo Morosini è entrato dalla finestra con l'impermeabile verde oliva",
+              "Beatrice Sartori ha preparato un infuso di Taxus in serra (21:22-21:38) con l'impermeabile di Clara e posato la tazzina a destra, ma la vittima non l'ha mai bevuto",
+              "Matteo Rinaldi ha avvelenato anche il caffè come piano di riserva"
             ],
             "correctOptionIndex": 2,
             "explanation": "Beatrice Sartori (taglia 38, codice #9901, esperta di Taxus baccata) è entrata in serra tra le 21:22 e le 21:38 indossando l'impermeabile verde oliva di Clara Valli per incastrarla (Carte #05, #08, #10). Ha portato il caffè avvelenato alle 21:39 posandolo a destra (da destrorsa, mentre Edoardo era mancino), ma Edoardo era in bagno e morì pochi minuti dopo per il collirio senza mai toccare la tazzina (Carte #01, #06, #07)."
           },
           {
             "id": "q5",
-            "question": "5. Perché il cadavere presentava ipostasi sul dorso pur essendo stato trovato prono sulla scrivania?",
+            "question": "5. Come si spiega la posizione del cadavere ritrovato sulla scrivania rispetto ai rilievi medico-legali?",
             "options": [
               "È un effetto chimico secondario dell'avvelenamento da Aconitina",
               "La vittima è morta supina sul pavimento del bagno alle 21:51 e Rinaldi l'ha spostata sulla scrivania alle 23:05 per simulare un malore al lavoro",
@@ -395,7 +395,7 @@ window.ProfilerScenarios = {
           },
           {
             "id": "vq3",
-            "question": "3. Quale prova smentisce categoricamente l'alibi del Notaio Serra tra le 21:50 e le 22:30?",
+            "question": "3. Quale riscontro oggettivo smaschera l'alibi falso dell'assassino tra le 21:50 e le 22:30?",
             "options": [
               "La porta-finestra era rotta da anni",
               "Il nubifragio violento (21:45-22:40) rende impossibile aver fumato un sigaro in giardino restando con abiti e scarpe asciutti",
@@ -533,7 +533,7 @@ window.ProfilerScenarios = {
             "category": "Forense",
             "timestamp": "22 Nov • Ore 01:20",
             "image": "svg:fenice-autopsy",
-            "rawText": "• COLPO DI SCENA 1 — Stomaco vittima: 0,0 ml di Champagne e 0,0 mg di Digitalina.\n• COLPO DI SCENA 2 — Ferita al petto da stiletto di Murano: margini completamente ESANGUI (assenza totale di reazione vitale). La pugnalata è stata inflitta POST-MORTEM su un cadavere già morto da oltre 35 minuti!\n• VERA CAUSA MORTE: micro-puntura profonda 1,8 mm sul polpastrello dell'indice DESTRO con tracce di Tetrodotossina pura e olio sintetico Moebius 9010.\n• Holter cardiaco vittima: arresto cardiaco fulminante registrato alle ore 22:14:18."
+            "rawText": "• Stomaco vittima: 0,0 ml di Champagne e 0,0 mg di Digitalina.\n• Ferita al petto da stiletto di Murano: margini completamente ESANGUI (assenza totale di reazione vitale). La lesione è stata inflitta POST-MORTEM su un soggetto già deceduto da oltre 35 minuti.\n• Esame cutaneo: micro-puntura profonda 1,8 mm sul polpastrello dell'indice DESTRO con tracce di Tetrodotossina pura e olio sintetico Moebius 9010.\n• Holter cardiaco vittima: arresto cardiaco fulminante registrato alle ore 22:14:18."
           },
           {
             "id": "fen-07",
@@ -605,7 +605,7 @@ window.ProfilerScenarios = {
             "category": "Forense",
             "timestamp": "22 Nov • Ore 04:30",
             "image": "svg:fenice-automaton",
-            "rawText": "• COLPO DI SCENA 3 — L'ispezione microscopica della chiavetta d'oro di carica dell'Automa rivela una modifica micromeccanica letale:\n• All'interno dell'albero cavo della chiavetta è stato fresato un alloggiamento con molla a scatto calibrata sul 3° giro di carica.\n• Al terzo giro completo (eseguito dal Maestro alle 22:13), un micro-ago chirurgico da 0,2 mm intriso di Tetrodotossina e olio Moebius 9010 scatta fuori dal foro dell'impugnatura, pungendo il polpastrello dell'indice destro di chi gira la chiave!"
+            "rawText": "• L'ispezione microscopica della chiavetta d'oro di carica dell'Automa rivela una modifica micromeccanica interna:\n• All'interno dell'albero cavo della chiavetta è stato fresato un alloggiamento con molla a scatto calibrata sul 3° giro di carica.\n• Al terzo giro completo (eseguito dal Maestro alle 22:13), un micro-ago chirurgico da 0,2 mm intriso di Tetrodotossina e olio Moebius 9010 scatta fuori dal foro dell'impugnatura, pungendo il polpastrello dell'indice destro di chi gira la chiave."
           },
           {
             "id": "fen-15",
@@ -623,13 +623,13 @@ window.ProfilerScenarios = {
             "category": "Documento",
             "timestamp": "22 Nov • Ore 05:45",
             "image": "svg:fenice-xrf-report",
-            "rawText": "• L'analisi spettrometrica XRF sull'Automa 'L'Orfeo d'Oro' svela il movente: il movimento interno NON è quello originale del 1768, ma una replica moderna in ottone al piombo lavorata a controllo numerico (CNC) nel 2026!\n• Email sul telefono del Maestro Contarini (inviata ore 18:50 a Marin): «Ettore, il suono del carillon è cambiato. Domani mattina alle 09:00 i periti assicurativi eseguiranno la scansione metallurgica XRF sull'Automa».\n• Rogatoria bancaria: Ettore Marin aveva venduto il vero meccanismo del 1768 a un collezionista di Ginevra il 4 Novembre per 1.200.000 CHF."
+            "rawText": "• L'analisi spettrometrica XRF sull'Automa 'L'Orfeo d'Oro' rivela che il movimento interno NON è quello originale del 1768, ma una replica moderna in ottone al piombo lavorata a controllo numerico (CNC) nel 2026.\n• Email sul telefono del Maestro Contarini (inviata ore 18:50 a Marin): «Ettore, il suono del carillon è cambiato. Domani mattina alle 09:00 i periti assicurativi eseguiranno la scansione metallurgica XRF sull'Automa».\n• Rogatoria bancaria: Ettore Marin aveva venduto il vero meccanismo del 1768 a un collezionista di Ginevra il 4 Novembre per 1.200.000 CHF."
           }
         ],
         "solution": [
           {
             "id": "fq1",
-            "question": "1. Chi è il vero assassino che ha causato la morte del Maestro Aurelio Contarini?",
+            "question": "1. Chi ha ucciso il Maestro Aurelio Contarini?",
             "options": [
               "Flavia De Santis (Prima Soprano)",
               "Davide Moretti (Primo Violino)",
@@ -641,7 +641,7 @@ window.ProfilerScenarios = {
           },
           {
             "id": "fq2",
-            "question": "2. Qual è stata la vera causa della morte e a che ora esatta è deceduto il Maestro?",
+            "question": "2. Qual è stata l'effettiva causa della morte e a che ora è deceduto il Maestro?",
             "options": [
               "Trauma cardiaco da stiletto in vetro di Murano alle ore 22:52",
               "Avvelenamento da Digitalina nello Champagne Rosé alle ore 21:35",
@@ -653,7 +653,7 @@ window.ProfilerScenarios = {
           },
           {
             "id": "fq3",
-            "question": "3. Perché il cadavere aveva uno stiletto di Murano conficcato nel petto se era già morto avvelenato?",
+            "question": "3. Come si spiega la presenza dello stiletto in vetro di Murano nel petto della vittima?",
             "options": [
               "È stato Ettore Marin alle 19:30 prima dell'inizio dell'opera",
               "Davide Moretti si è introdotto dal condotto acustico alle 22:52 per rubare la lettera di denuncia e, nel buio, ha colpito il corpo già morto da 38 minuti",
@@ -665,7 +665,7 @@ window.ProfilerScenarios = {
           },
           {
             "id": "fq4",
-            "question": "4. Come si spiega l'enigma della 'camera chiusa' (chiavistello interno bloccato) se sia l'assassino sia gli altri sospettati erano fuori alle 23:15?",
+            "question": "4. Come si spiega il chiavistello interno bloccato del Camerino n. 1 alle 23:15?",
             "options": [
               "Il Maestro si è chiuso dentro prima di caricare l'Automa e nessuno è più entrato",
               "Ettore Marin aveva costruito un chiavistello magnetico telecomandato",
@@ -677,19 +677,19 @@ window.ProfilerScenarios = {
           },
           {
             "id": "fq5",
-            "question": "5. Chi aveva avvelenato la coppa di Champagne con la Digitalina e perché non ha ucciso il Maestro?",
+            "question": "5. Qual è la dinamica relativa alla coppa di Champagne Rosé trovata sul tavolo?",
             "options": [
-              "Lorenzo Grimaldi, ma la coppa è evaporata per il caldo del camerino",
-              "Flavia De Santis alle 21:35 per evitare l'esclusione dalla tournée, ma il Maestro (astemio prima di dirigere) non ne ha bevuto nemmeno un sorso",
-              "Valeria Contarini per ereditare il patrimonio paterno",
-              "Ettore Marin come piano di riserva nel caso l'Automa non funzionasse"
+              "Lorenzo Grimaldi l'aveva avvelenata, ma la coppa è evaporata per il caldo del camerino",
+              "Flavia De Santis l'aveva avvelenata con Digitalina alle 21:35 per evitare l'esclusione dalla tournée, ma il Maestro (astemio prima di dirigere) non ne ha bevuto nemmeno un sorso",
+              "Valeria Contarini l'aveva avvelenata per ereditare il patrimonio paterno",
+              "Ettore Marin l'aveva avvelenata come piano di riserva"
             ],
             "correctOptionIndex": 1,
             "explanation": "La soprano Flavia De Santis ha versato 120 mg della propria Digitalina nella coppa con bordo dorato alle 21:35 (Carte #04, #05, #11), ma il Maestro non beveva mai alcolici prima di dirigere e lo stomaco è risultato completamente vuoto (0,0 ml di Champagne e 0,0 mg di Digitalina, Carta #06)."
           },
           {
             "id": "fq6",
-            "question": "6. Qual era il vero movente dell'Ing. Ettore Marin per assassinare il Maestro proprio la sera del 21 Novembre?",
+            "question": "6. Qual era il vero movente dell'assassino per colpire proprio la sera del 21 Novembre?",
             "options": [
               "Un debito di gioco contratto con il Sovrintendente Grimaldi",
               "Impedire la perizia spettrometrica XRF fissata per l'indomani mattina, che avrebbe scoperto il furto del meccanismo originale del 1768 venduto a Ginevra per 1.200.000 CHF",
@@ -711,13 +711,13 @@ window.ProfilerScenarios = {
           "title": "L'Ombra della Cripta — Delitto all'Eremo di San Bernardo",
           "date": "2-3 Dicembre 2026",
           "location": "Eremo & Biblioteca Antica di San Bernardo (Valle d'Aosta, 2.180 m)",
-          "description": "Isolati da una violenta tormenta di neve a oltre duemila metri di quota, cinque presenti assistono al ritrovamento del corpo senza vita del celebre paleografo Prof. Gregorio Dalmasso ai piedi della ripida scalinata in pietra della Cripta Ipogea. Accanto al corpo giace un pesante candelabro in bronzo macchiato di sangue e il suo orologio da polso con il vetro infranto fermo sulle 22:40. La Carta #01 espone il contesto iniziale e i 6 Quesiti della Procura a cui dovrai rispondere a testo libero al termine dell'indagine.",
+          "description": "Isolati da una violenta tormenta di neve a oltre duemila metri di quota, cinque presenti assistono al ritrovamento del corpo senza vita del celebre paleografo Prof. Gregorio Dalmasso ai piedi della ripida scalinata in pietra della Cripta Ipogea. Accanto al corpo giace un pesante candelabro in bronzo macchiato di sangue e il suo orologio da polso con il vetro infranto fermo sulle 22:40. La Carta #01 espone il contesto iniziale e i 6 Quesiti della Procura (puoi selezionarli col mouse e cliccare '✂️ Estrai in Carta' per averli sempre a portata di mano in una nota dedicata).",
           "victim": {
             "name": "Prof. Gregorio Dalmasso",
             "age": 66,
             "role": "Paleografo & Direttore del Restauro del 'Codex Vallis'",
             "bloodType": "AB Positivo (AB+)",
-            "notes": "Destrorso. Diabetico di tipo 2 monitorato con sensore glicemico sottocutaneo continuo (CGM) collegato al tablet. Esperto di falsi medievali e diagnostica multispettrale a raggi UV."
+            "notes": "Destrorso. Diabetico di tipo 2 monitorato con sensore glicemico sottocutaneo continuo (CGM) collegato al tablet. Esperto di codici medievali e diagnostica multispettrale."
           },
           "suspects": [
             {
@@ -733,7 +733,7 @@ window.ProfilerScenarios = {
               "name": "Dott.ssa Miriam Alverà",
               "age": 38,
               "role": "Chimica dei Pigmenti & Vicedirettrice Restauro",
-              "traits": "Mancina • Gruppo 0- • Fuma tabacco al chiodo di garofano • Maneggia Orpimento (Arsenico)",
+              "traits": "Mancina • Gruppo 0- • Fuma tabacco al chiodo di garofano • Analizza i pigmenti antichi",
               "notes": "Collaboratrice diretta del Professore nello Scriptorium; in difficoltà finanziarie per debiti pregressi."
             },
             {
@@ -749,7 +749,7 @@ window.ProfilerScenarios = {
               "name": "Suor Cecilia (Elena Roux)",
               "age": 45,
               "role": "Speziale & Responsabile Erboristeria Monastica",
-              "traits": "Destrorsa • Gruppo B+ • Distilla liquore Genepy • Ex infermiera anestesista",
+              "traits": "Destrorsa • Gruppo B+ • Distilla liquore Genepy • Ex infermiera",
               "notes": "Gestisce la farmacia dell'eremo, la distilleria di erbe alpine e le spedizioni postali dei prodotti monastici."
             },
             {
@@ -770,7 +770,7 @@ window.ProfilerScenarios = {
             "category": "Documento",
             "timestamp": "2 Dic • Ore 23:10",
             "image": "svg:abbazia-briefing",
-            "rawText": "SCENARIO INIZIALE:\nLa sera del 2 Dicembre 2026 una tormenta isola l'Eremo di San Bernardo. Alle 23:10 il Prof. Gregorio Dalmasso viene trovato privo di vita ai piedi della scalinata della Cripta Ipogea, con una ferita lacero-contusa alla nuca, un candelabro di bronzo insanguinato accanto e l'orologio da polso spezzato sulle 22:40.\n\nQUESITI FINALI DELLA PROCURA (A RISPOSTA APERTA):\n1. Chi ha effettivamente ucciso il Prof. Dalmasso e con quale arma/modalità?\n2. A che ora precisa è morto e perché l'orologio segna le 22:40?\n3. Qual è il vero movente dell'assassino legato al 'Codex Vallis'?\n4. Chi lo ha colpito alla nuca col candelabro di bronzo e perché quel colpo non l'ha ucciso?\n5. Chi aveva avvelenato il liquore Genepy nello Scriptorium e che fine ha fatto?\n6. Chi ha causato il blackout delle 22:28 e spostato il corpo nella Cripta?"
+            "rawText": "SCENARIO INIZIALE:\nLa sera del 2 Dicembre 2026 una tormenta isola l'Eremo di San Bernardo. Alle 23:10 il Prof. Gregorio Dalmasso viene trovato privo di vita ai piedi della scalinata della Cripta Ipogea, con una ferita alla nuca, un candelabro di bronzo insanguinato accanto e l'orologio da polso fermo sulle 22:40.\n\nQUESITI FINALI DELLA PROCURA:\n1. Chi ha ucciso il Prof. Gregorio Dalmasso?\n2. Qual è stata l'effettiva causa della morte (arma o mezzo utilizzato)?\n3. In quale luogo esatto e a che ora è avvenuto il decesso?\n4. Qual è il movente che ha spinto l'assassino ad agire?\n5. Come si spiega la scena ritrovata nella Cripta e chi vi è intervenuto?\n6. Quali altri illeciti o tentativi di reato sono stati commessi nell'Eremo quella sera?"
           },
           {
             "id": "abb-02",
@@ -779,7 +779,7 @@ window.ProfilerScenarios = {
             "category": "Luogo",
             "timestamp": "2 Dic • Ore 23:25",
             "image": "svg:abbazia-crypt-stairs",
-            "rawText": "• Il cadavere giace supino alla base dei 18 gradini in pietra che scendono dal corridoio alla Cripta.\n• A 40 cm dalla testa: candelabro a tre bracci in bronzo con tracce ematiche (gruppo AB+) e capelli grigi della vittima.\n• ANOMALIA 1: Sui 18 gradini polverosi non vi è alcun segno di rotolamento o urto del corpo.\n• ANOMALIA 2: Gli occhiali da lettura in cristallo sottile del Professore sono intatti nel taschino sul petto."
+            "rawText": "• Il cadavere giace supino alla base dei 18 gradini in pietra che scendono dal corridoio alla Cripta.\n• A 40 cm dalla testa: candelabro a tre bracci in bronzo con tracce ematiche (gruppo AB+) e capelli grigi della vittima.\n• Rilievo polvere sui 18 gradini: strato uniforme, assenza di segni di scivolamento o impatto lungo la rampa.\n• Indumenti vittima: occhiali da lettura in cristallo sottile intatti nel taschino superiore della giacca."
           },
           {
             "id": "abb-03",
@@ -788,16 +788,16 @@ window.ProfilerScenarios = {
             "category": "Luogo",
             "timestamp": "2 Dic • Ore 23:45",
             "image": "svg:abbazia-scriptorium",
-            "rawText": "• Lo Scriptorium si trova esattamente sopra la Cripta. Sul leggio centrale è aperto il manoscritto duecentesco 'Codex Vallis' sotto una lampada di Wood (raggi UV) ancora accesa.\n• Vicino alla fioriera nell'angolo: un bicchierino da liquore vuoto posato sul terriccio umido che emana un forte odore di erbe alpine (Genepy).\n• Sul tappeto dietro il leggio: una singola goccia di cera d'api vergine e una macchia di fango scuro."
+            "rawText": "• Lo Scriptorium è situato al piano superiore sopra la Cripta. Sul leggio centrale è aperto il manoscritto duecentesco 'Codex Vallis' con la lampada di Wood (raggi UV) accesa.\n• Accanto alla fioriera nell'angolo: un bicchierino da liquore vuoto posato sul terriccio umido, che odora di erbe alpine (Genepy).\n• Sul tappeto dietro il leggio: una goccia solidificata di cera d'api vergine e una traccia di fango scuro."
           },
           {
             "id": "abb-04",
             "number": "#04",
-            "title": "Rilievi Termici & Perizia sull'Orologio",
+            "title": "Rilievi Termici & Ispezione Orologio",
             "category": "Forense",
             "timestamp": "3 Dic • Ore 00:15",
             "image": "svg:thermal-blood",
-            "rawText": "• Temp. epatica del cadavere alle ore 23:30: 34,0 °C (temperatura normale: 37,0 °C; nel freddo dell'eremo il raffreddamento cadaverico è di esattamente 2,0 °C per ogni ora trascorsa dalla morte).\n• Ispezione microscopica dell'orologio da polso della vittima (fermo sulle 22:40 col vetro rotto): la corona laterale di regolazione dell'ora si trova nella posizione ESTRATTA (scatto di rimessa manuale) e il vetro presenta l'impronta netta di un tacco chiodato."
+            "rawText": "• Temperatura epatica del cadavere alle ore 23:30: 34,0 °C (temperatura fisiologica: 37,0 °C; tasso di raffreddamento misurato nell'ambiente: 2,0 °C/ora).\n• Orologio meccanico al polso della vittima: lancette ferme sulle 22:40 e vetro minerale fratturato.\n• Esame macro-fotografico della cassa dell'orologio: l'albero della corona laterale di regolazione dell'ora si trova estratto nello scatto di rimessa manuale; sul vetro sono presenti striature parallele da metallo chiodato."
           },
           {
             "id": "abb-05",
@@ -806,7 +806,7 @@ window.ProfilerScenarios = {
             "category": "Deposizione",
             "timestamp": "3 Dic • Ore 00:35",
             "image": "svg:abbazia-priore",
-            "rawText": "«Dalle 21:30 alle 22:45 sono rimasto in Cappella a pregare al lume delle candele di cera d'api del nostro apiario. Con la mia grave artrosi al ginocchio destro non cammino mai senza il mio bastone col puntale in ottone e non potrei mai scendere la ripida scalinata della Cripta.\nÈ vero, ieri ho discusso con Gregorio: voleva trasferire il Codex Vallis a Torino, privando l'eremo del suo tesoro.»"
+            "rawText": "«Dalle 21:30 alle 22:45 sono rimasto in Cappella a pregare al lume delle candele di cera d'api del nostro apiario. Con l'artrosi al ginocchio destro non mi muovo mai senza il mio bastone col puntale in ottone e non scendo mai la ripida scalinata della Cripta.\nÈ vero, nel pomeriggio ho discusso con Gregorio: voleva trasferire il Codex Vallis a Torino, privando l'eremo del suo manoscritto più sacro.»"
           },
           {
             "id": "abb-06",
@@ -815,7 +815,7 @@ window.ProfilerScenarios = {
             "category": "Deposizione",
             "timestamp": "3 Dic • Ore 00:55",
             "image": "svg:abbazia-chimica",
-            "rawText": "«Ho lavorato nello Scriptorium con il Professore fino alle 21:20 per catalogare i pigmenti gialli a base di Orpimento (trisolfuro di arsenico). Poi sono salita nella mia cella al secondo piano, ho fumato una sigaretta al chiodo di garofano e mi sono collegata al Wi-Fi dell'eremo senza più scendere.\nIl Professore era severo, ma non avrei mai potuto fargli del male.»"
+            "rawText": "«Ho lavorato nello Scriptorium con il Professore fino alle 21:20 per catalogare i pigmenti gialli a base di Orpimento (trisolfuro di arsenico). Poi sono salita nella mia cella al secondo piano, ho fumato una sigaretta al chiodo di garofano e mi sono collegata al Wi-Fi dell'eremo senza più uscire.\nIl Professore era esigente, ma il nostro rapporto era puramente accademico.»"
           },
           {
             "id": "abb-07",
@@ -824,7 +824,7 @@ window.ProfilerScenarios = {
             "category": "Deposizione",
             "timestamp": "3 Dic • Ore 01:15",
             "image": "svg:abbazia-figlio",
-            "rawText": "«Dalle 21:30 alle 23:00 ero nella Sala Camino al piano terra per una lunga chiamata sul telefono satellitare con i miei soci di Ginevra.\nAvevo lasciato il mio borsello medico incustodito nell'ingresso dell'Erboristeria tra le 20:30 e le 21:30: dentro tenevo due autoiniettori automatici EpiPen per la mia allergia alle api, ma ora controllando insieme a voi ne è rimasto soltanto uno!»"
+            "rawText": "«Dalle 21:30 alle 23:00 ero nella Sala Camino al piano terra per una chiamata sul telefono satellitare con i miei soci di Ginevra.\nAvevo lasciato il mio borsello medico sul panca d'ingresso dell'Erboristeria tra le 20:30 e le 21:30: dentro porto sempre due autoiniettori automatici EpiPen per la mia allergia alle api, ma aprendolo ora davanti a voi ne trovo soltanto uno.»"
           },
           {
             "id": "abb-08",
@@ -833,7 +833,7 @@ window.ProfilerScenarios = {
             "category": "Deposizione",
             "timestamp": "3 Dic • Ore 01:35",
             "image": "svg:abbazia-suora",
-            "rawText": "«Alle 21:36 ho preparato in Erboristeria il vassoio con il bicchierino del nostro liquore Genepy per il Professore. L'ho lasciato un minuto sul bancone del corridoio per chiudere la dispensa e alle 21:40 l'ho servito nello Scriptorium: il Professore era vivo e stava esaminando il Codex Vallis con la lampada UV e il tablet.\nAlle 21:55 sono tornata un istante nello Scriptorium solo per riprendere il vassoio vuoto, e lui stava benissimo.»"
+            "rawText": "«Alle 21:36 ho preparato in Erboristeria il vassoio con il bicchierino del nostro liquore Genepy per il Professore. L'ho lasciato un minuto sul bancone del corridoio per chiudere la dispensa e alle 21:40 l'ho servito nello Scriptorium: il Professore era al leggio con la lampada UV e il tablet.\nAlle 21:55 sono ripassata nello Scriptorium per ritirare il vassoio e lui era ancora chino sul codice.»"
           },
           {
             "id": "abb-09",
@@ -842,7 +842,7 @@ window.ProfilerScenarios = {
             "category": "Deposizione",
             "timestamp": "3 Dic • Ore 01:55",
             "image": "svg:abbazia-custode",
-            "rawText": "«Alle 22:28 il generatore diesel è saltato per il gelo lasciando l'intero eremo al buio completo fino alle 22:39. In quegli undici minuti ero chiuso nel locale motori esterno a spurgare la pompa del gasolio.\nPorto scarponi chiodati taglia 45 per camminare nel ghiaccio, ma stasera non sono mai salito nello Scriptorium né sceso nella Cripta.»"
+            "rawText": "«Alle 22:28 il generatore elettrico è saltato lasciando l'intero eremo al buio fino alle 22:39. In quegli undici minuti ero nel locale motori esterno a spurgare la pompa del gasolio.\nIndosso scarponi chiodati taglia 45 per il ghiaccio del cortile, ma stasera non sono mai salito nello Scriptorium né sceso nella Cripta.»"
           },
           {
             "id": "abb-10",
@@ -851,16 +851,16 @@ window.ProfilerScenarios = {
             "category": "Forense",
             "timestamp": "3 Dic • Ore 02:20",
             "image": "svg:abbazia-autopsy-epipen",
-            "rawText": "• COLPO DI SCENA 1 — La ferita lacero-contusa alla nuca (candelabro di bronzo) presenta margini ESANGUI e zero edema vitale: è stata inflitta POST-MORTEM su un corpo già deceduto!\n• COLPO DI SCENA 2 — Stomaco vittima: 0,0 ml di liquore Genepy e 0,0 mg di Arsenico.\n• VERA CAUSA DELLA MORTE: Arresto cardiorespiratorio fulminante da iniezione intramuscolare di Succinilcolina cloruro (curaro ospedaliero paralizzante) + Cloruro di Potassio.\n• Sulla spalla SINISTRA (attraverso la giacca): foro d'ago circondato dall'ecchimosi ad anello tipica di un autoiniettore a molla."
+            "rawText": "• Esame cranico: la ferita lacero-contusa alla nuca (compatibile col candelabro di bronzo) presenta margini tissutali esangui e assenza di reazione vitale leucocitaria (lesione prodotta su soggetto già privo di circolazione sanguigna).\n• Contenuto gastrico: 0,0 ml di alcol etilico; 0,0 mg di arsenico.\n• Esame tossicologico ematico: concentrazione letale di Succinilcolina cloruro e Cloruro di Potassio.\n• Deltoide SINISTRO (attraverso la trama della giacca): foro d'ago intramuscolare circondato da ecchimosi anulare a stampo (diametro 14 mm)."
           },
           {
             "id": "abb-11",
             "number": "#11",
-            "title": "Analisi Chimica della Fioriera nello Scriptorium",
+            "title": "Analisi Chimica Fioriera & Audio Vittima",
             "category": "Forense",
             "timestamp": "3 Dic • Ore 02:45",
             "image": "svg:abbazia-scriptorium",
-            "rawText": "• Nel terriccio della fioriera dello Scriptorium vengono isolati 35 ml di liquore Genepy contenenti 180 mg di Orpimento macinato (Trisolfuro di Arsenico letale).\n• Sull'appunti-vocale del telefono del Professore (registrato alle ore 21:48): «Nota riservata: il Genepy servito stasera presenta un precipitato giallo sulfureo sul fondo del bicchiere. L'ho versato nella fioriera senza berlo per analizzarlo domani»."
+            "rawText": "• Campione di terriccio prelevato dalla fioriera dello Scriptorium: rilevati 35 ml di liquore Genepy miscelati a 180 mg di Orpimento macinato (Trisolfuro di Arsenico).\n• File audio 'Memo_44.m4a' registrato sul telefono della vittima alle ore 21:48: «Il Genepy portato stasera presenta un precipitato giallastro sulfureo sul fondo del bicchiere. L'ho rovesciato nella fioriera senza berlo per sottoporlo a spettrometria domani mattina»."
           },
           {
             "id": "abb-12",
@@ -869,140 +869,137 @@ window.ProfilerScenarios = {
             "category": "Documento",
             "timestamp": "3 Dic • Ore 03:05",
             "image": "svg:autopsy-ecg",
-            "rawText": "• Scaricamento dati dal sensore sottocutaneo continuo del Prof. Dalmasso:\n• Ore 21:40 – 21:55: parametri vitali regolari mentre la vittima lavora al leggio dello Scriptorium.\n• Ore 21:56:30: improvviso picco adrenergico da colluttazione/sorpresa.\n• Ore 21:59:10: cessazione definitiva della perfusione ematica e arresto cardiaco (coerente con la temperatura epatica di 34,0 °C rilevata 1,5 ore dopo alle 23:30)."
+            "rawText": "• Log memoria interna del sensore sottocutaneo del Prof. Dalmasso:\n• Ore 21:40 – 21:55: valori interstiziali e battito regolari.\n• Ore 21:56:30: picco adrenergico acuto.\n• Ore 21:59:10: cessazione definitiva della perfusione ematica e arresto circolatorio."
           },
           {
             "id": "abb-13",
             "number": "#13",
-            "title": "Ispezione Scala a Chiocciola & Cera d'Api",
+            "title": "Rilievi Passaggio Cappella & Candelabro",
             "category": "Luogo",
             "timestamp": "3 Dic • Ore 03:25",
             "image": "svg:abbazia-priore",
-            "rawText": "• Dietro lo scaffale ligneo dello Scriptorium si apre una porticina di servizio collegata alla Cappella da soli 4 gradini bassi.\n• Sul pavimento vicino al leggio dello Scriptorium: il Luminol e la luce radente evidenziano l'impronta circolare di un puntale in ottone da 22 mm (identico al bastone di Padre Anselmo) e gocce di cera d'api liturgica della Cappella.\n• Sulla base del candelabro di bronzo: impronte digitali parziali di Padre Anselmo Viret."
+            "rawText": "• Dietro lo scaffale ligneo dello Scriptorium è presente una porta secondaria collegata alla Cappella da 4 gradini bassi.\n• Sul pavimento vicino al leggio dello Scriptorium: la luce radente evidenziano l'impronta circolare di un puntale metallico da 22 mm e tracce di cera d'api liturgica.\n• Sull'impugnatura del candelabro di bronzo: rilevate impronte digitali di Padre Anselmo Viret."
           },
           {
             "id": "abb-14",
             "number": "#14",
-            "title": "Secondo Interrogatorio: Confessione del Priore",
+            "title": "Integrazione Verbale: Padre Anselmo Viret",
             "category": "Deposizione",
             "timestamp": "3 Dic • Ore 03:45",
             "image": "svg:abbazia-priore",
-            "rawText": "• Messo di fronte alle impronte del bastone e alla cera d'api nello Scriptorium, Padre Anselmo scoppia in lacrime:\n«Sono entrato nello Scriptorium alle 22:15 passando dalla porticina della Cappella. La stanza era in penombra e Gregorio era steso a terra accanto al leggio. Quando mi sono chinato per prendere il Codex Vallis, il suo braccio è scivolato e nel panico ho creduto che si stesse rialzando per denunciarmi: ho afferrato il candelabro di bronzo e l'ho colpito alla nuca alle 22:18! Ero convinto di averlo ucciso io!»"
+            "rawText": "• Confrontato con i rilievi nello Scriptorium, Padre Anselmo dichiara:\n«Sono entrato nello Scriptorium alle 22:15 passando dalla porticina della Cappella. La stanza era illuminata solo dalla lampada UV e Gregorio era riverso a terra accanto al leggio. Quando mi sono chinato per prendere il Codex Vallis, il suo braccio è scivolato lungo il fianco: in preda al panico ho creduto che si stesse rialzando, ho afferrato il candelabro di bronzo e l'ho colpito alla nuca alle 22:18, credendo di averlo ucciso io.»"
           },
           {
             "id": "abb-15",
             "number": "#15",
-            "title": "Perizia Quadro Elettrico & Tracce Taglia 45",
+            "title": "Perizia Quadro Elettrico & Tracce Sul Pavimento",
             "category": "Forense",
             "timestamp": "3 Dic • Ore 04:05",
             "image": "svg:forensic-digital",
-            "rawText": "• Il generatore diesel esterno non ha subito alcun blocco da gelo: il registro elettronico mostra che il blackout delle 22:28–22:39 è stato provocato abbassando manualmente l'interruttore generale nel quadro interno.\n• Tra lo Scriptorium e la sommità della scalinata della Cripta: rilevate impronte fangose di scarponi chiodati taglia 45 (compatibili con la frattura sul vetro dell'orologio della vittima) e segni di trasporto a braccia del corpo."
+            "rawText": "• Diagnostica gruppo elettrogeno diesel: nessun blocco termico registrato; l'interruzione di corrente delle 22:28–22:39 è stata causata dall'abbassamento manuale della leva sul quadro elettrico interno.\n• Corridoio tra Scriptorium e sommità della scala della Cripta: rilevate impronte fangose di suola chiodata taglia 45 con passo appesantito da carico superiore a 75 kg."
           },
           {
             "id": "abb-16",
             "number": "#16",
-            "title": "Confessione di Marco Chabod (Lo Spostamento)",
+            "title": "Integrazione Verbale: Marco Chabod",
             "category": "Deposizione",
             "timestamp": "3 Dic • Ore 04:25",
             "image": "svg:abbazia-custode",
-            "rawText": "• Confrontato con la perizia sul generatore e le impronte taglia 45, il manutentore Marco Chabod ammette:\n«Alle 22:22 Padre Anselmo è corso da me sconvolto dicendo di aver ucciso per errore il Professore nello Scriptorium col candelabro. Mi ha offerto 20.000 euro per inscenare una caduta accidentale: alle 22:28 ho staccato la corrente, ho caricato il corpo sulle spalle portandolo dallo Scriptorium ai piedi della Cripta, ho messo lì il candelabro, ho tirato la corona dell'orologio portandolo sulle 22:40 e ne ho spaccato il vetro col tacco dello scarpone!»"
+            "rawText": "• Messo di fronte ai log del generatore e alle impronte taglia 45, Marco Chabod dichiara:\n«Alle 22:22 Padre Anselmo mi ha chiamato sconvolto dicendo di aver ucciso accidentalmente il Professore nello Scriptorium col candelabro. Mi ha promesso 20.000 euro per simulare una caduta dalle scale: alle 22:28 ho abbassato l'interruttore generale, ho trasportato il corpo a spalla dallo Scriptorium fino ai piedi della scala della Cripta insieme al candelabro, ho portato avanti le lancette dell'orologio sulle 22:40 e ne ho rotto il vetro col tacco dello scarpone.»"
           },
           {
             "id": "abb-17",
             "number": "#17",
-            "title": "Perquisizione Cella di Miriam Alverà",
+            "title": "Rilievi Corridoio & Cella di Miriam Alverà",
             "category": "Forense",
             "timestamp": "3 Dic • Ore 04:45",
             "image": "svg:abbazia-chimica",
-            "rawText": "• Vicino al bancone del corridoio dove Suor Cecilia aveva lasciato incustodito il vassoio alle 21:37 viene repertata cenere di tabacco al chiodo di garofano.\n• Messa alle strette, la Dott.ssa Miriam Alverà confessa il tentato avvelenamento: «Il Professore aveva scoperto che avevo venduto due frammenti di pergamena minore. Alle 21:38, mentre Suor Cecilia era in dispensa, ho versato l'Orpimento (Arsenico) nel bicchierino di Genepy sul vassoio! Poi alle 21:42 mi sono chiusa in cella» (alibi dalle 21:42 confermato dai log della serratura magnetica e del router)."
+            "rawText": "• Sul bancone del corridoio dove il vassoio del Genepy è rimasto incustodito alle 21:37 vengono repertati micro-residuati di cenere di tabacco al chiodo di garofano.\n• La Dott.ssa Miriam Alverà ammette: «Il Professore aveva scoperto che avevo sottratto due frammenti minori di pergamena. Alle 21:38, mentre Suor Cecilia era in dispensa, ho versato polvere di Orpimento nel bicchierino di Genepy sul vassoio; alle 21:42 mi sono chiusa nella mia cella» (permanenza in cella dalle 21:42 confermata dalla serratura elettronica)."
           },
           {
             "id": "abb-18",
             "number": "#18",
-            "title": "Ritrovamento dell'EpiPen nell'Inceneritore",
+            "title": "Reperto Rinvenuto nella Stufa dell'Erboristeria",
             "category": "Forense",
             "timestamp": "3 Dic • Ore 05:10",
             "image": "svg:abbazia-autopsy-epipen",
-            "rawText": "• COLPO DI SCENA 3 — Nella cenere fredda della stufa dell'Erboristeria Monastica viene rinvenuto l'autoiniettore automatico 'EpiPen' sottratto dal borsello di Federico Dalmasso.\n• L'analisi di laboratorio dimostra che il serbatoio interno è stato svuotato dell'adrenalina e ricaricato con una soluzione letale di Succinilcolina cloruro e Cloruro di Potassio.\n• Sulla ghiera interna del dispositivo: micro-tracce di olio essenziale di Artemisia genipi (Genepy) e lattice di guanti chirurgici taglia S."
+            "rawText": "• Nella cenere fredda della stufa dell'Erboristeria Monastica viene recuperato il cilindro plastico di un autoiniettore 'EpiPen' (numero di lotto corrispondente alla confezione di Federico Dalmasso).\n• Il serbatoio interno risulta svuotato dell'adrenalina e ricaricato artigianalmente con Succinilcolina cloruro e Cloruro di Potassio.\n• Sul bordo anulare di scatto (diametro 14 mm): fibre di lana della giacca della vittima; all'interno del cappuccio: tracce di olio essenziale di Artemisia genipi (Genepy)."
           },
           {
             "id": "abb-19",
             "number": "#19",
-            "title": "Dossier Segreto: Chi è davvero Suor Cecilia",
+            "title": "Riscontro Dattiloscopico & Cella Erboristeria",
             "category": "Documento",
             "timestamp": "3 Dic • Ore 05:35",
             "image": "svg:abbazia-suora",
-            "rawText": "• Verifica dattiloscopica Interpol su Suor Cecilia: la donna è in realtà la Dott.ssa Elena Roux, ex medico anestesista dell'Ospedale di Lione, ricercata in Francia dal 2019 per la sottrazione di fiale ospedaliere di Succinilcolina e per una morte sospetta.\n• Nella cella di Suor Cecilia, dentro il doppiofondo della cassetta di pronto soccorso dell'Erboristeria: rinvenute 3 fiale intatte di 'Succinilcolina Cloruro 100mg/2ml' e 1 fiala appena svuotata, oltre a siringhe di precisione per il travaso nell'autoiniettore EpiPen."
+            "rawText": "• Riscontro AFIS/Interpol sulle impronte di Suor Cecilia: corrispondono a Elena Roux, ex infermiera anestesista dell'Ospedale di Lione, ricercata dal 2019 per furto di farmaci curarizzanti ospedalieri.\n• Nel doppiofondo dell'armadio farmaceutico dell'Erboristeria (chiave in possesso esclusivo di Suor Cecilia): sequestrate 3 fiale integre di 'Succinilcolina Cloruro 100mg' e 1 fiala vuota, insieme a una siringa da travaso con ago 23G."
           },
           {
             "id": "abb-20",
             "number": "#20",
-            "title": "Scansione UV sul 'Codex Vallis' & Casse a Lione",
+            "title": "Memoria Tablet Vittima & Registro Spedizioni",
             "category": "Documento",
             "timestamp": "3 Dic • Ore 06:00",
             "image": "svg:abbazia-uv-codex",
-            "rawText": "• Il tablet del Prof. Dalmasso (bloccato con ultimo salvataggio alle ore 21:54) rivela il VERO MOVENTE:\n• Esaminando il 'Codex Vallis' ai raggi UV, il Professore aveva appena scoperto che le 4 miniature più preziose del 1280 (valore 1,4 milioni di €) erano state tagliate e sostituite con falsi moderni invecchiati chimicamente usando un decotto di Genepy dell'Erboristeria!\n• Nel registro spedizioni dell'Erboristeria: Suor Cecilia contrabbandava le miniature autentiche sul mercato nero di Lione nascondendole nel doppiofondo delle casse di bottiglie di Genepy (bonifico di 680.000 € sul conto cifrato di Elena Roux). Tornata nello Scriptorium alle 21:55, ha visto la scoperta sul tablet del Professore e alle 21:56 gli ha piantato nella spalla l'EpiPen modificato!"
+            "rawText": "• Dal tablet del Prof. Dalmasso (ultimo salvataggio ore 21:54 nello Scriptorium):\n• Serie fotografica UV sul 'Codex Vallis': 4 fogli miniati del 1280 (valore stimato 1,4 milioni di €) risultano sostituiti con falsi moderni la cui pergamena è stata invecchiata chimicamente con decotto di Genepy.\n• Bozza di denuncia salvata alle 21:54: il Professore aveva collegato il trattamento chimico dei falsi alle spedizioni postali di casse di bottiglie di Genepy inviate da Suor Cecilia a un antiquario di Lione (bonifici per 680.000 € su conto cifrato intestato a Elena Roux)."
           }
         ],
         "solution": [
           {
             "id": "aq1",
-            "question": "1. Chi ha effettivamente ucciso il Prof. Gregorio Dalmasso e con quale arma/modalità esatta?",
-            "officialAnswer": "Suor Cecilia (al secolo Dott.ssa Elena Roux), iniettandogli nella spalla sinistra Succinilcolina e Cloruro di Potassio tramite l'autoiniettore EpiPen rubato a Federico e modificato.",
+            "question": "1. Chi ha ucciso il Prof. Gregorio Dalmasso?",
+            "officialAnswer": "Suor Cecilia (al secolo Elena Roux, speziale ed ex infermiera anestesista).",
             "acceptedKeywords": [
-              ["cecilia", "elena", "roux", "suora", "speziale"],
-              ["epipen", "iniettore", "autoiniettore", "succinilcolina", "potassio", "iniezione", "spalla"]
+              ["cecilia", "elena", "roux", "suora", "speziale"]
             ],
-            "explanation": "Suor Cecilia (l'ex anestesista Elena Roux) aveva rubato un autoiniettore EpiPen dal borsello di Federico Dalmasso tra le 20:30 e le 21:30, riempiendolo con Succinilcolina cloruro e Cloruro di Potassio (Carte #07, #10, #18, #19). Tornata nello Scriptorium alle 21:55, ha colpito il Professore alla spalla sinistra alle 21:56 causando l'arresto cardiaco alle 21:59 (Carta #12)."
+            "explanation": "Suor Cecilia (Elena Roux) è tornata nello Scriptorium alle 21:55, ha scoperto sul tablet che il Professore aveva appena smascherato il suo traffico di miniature tramite la lampada UV e lo ha ucciso alle 21:56 (Carte #08, #12, #18, #19, #20)."
           },
           {
             "id": "aq2",
-            "question": "2. A che ora precisa è avvenuto il decesso della vittima e perché l'orologio da polso segnava invece le 22:40?",
-            "officialAnswer": "Il decesso è avvenuto alle ore 21:59 nello Scriptorium. L'orologio è stato spostato manualmente sulle 22:40 (corona estratta) e rotto col tacco dallo scarpone di Marco Chabod durante la messinscena.",
+            "question": "2. Qual è stata l'effettiva causa della morte (arma o mezzo utilizzato)?",
+            "officialAnswer": "Iniezione intramuscolare nella spalla sinistra di Succinilcolina e Cloruro di Potassio tramite l'autoiniettore EpiPen sottratto a Federico Dalmasso e modificato.",
             "acceptedKeywords": [
-              ["21:59", "22:00", "21:56", "21.59", "22.00"],
-              ["chabod", "marco", "manutentore", "corona", "manualmente", "spostato", "falso", "messinscena", "tacco"]
+              ["epipen", "autoiniettore", "iniettore", "succinilcolina", "potassio", "iniezione", "siringa", "curaro"]
             ],
-            "explanation": "Sia la telemetria del sensore CGM (morte clinica alle 21:59:10, Carta #12) sia il raffreddamento epatico (34,0 °C alle 23:30 con calo di 2 °C/ora = 1,5 ore prima → ~22:00, Carta #04) confermano la morte alle 21:59. L'orologio è stato portato avanti manualmente sulle 22:40 (corona rimasta estratta) e spaccato col tacco chiodato da Marco Chabod durante il blackout delle 22:28-22:39 (Carte #04, #16)."
+            "explanation": "L'autopsia (Carta #10) esclude sia la caduta sia il colpo di candelabro (inferto post-mortem) sia l'avvelenamento per bocca (stomaco vuoto), accertando l'arresto cardiorespiratorio da Succinilcolina e Potassio iniettati nella spalla sinistra con l'EpiPen modificato ritrovato nella stufa dell'Erboristeria (Carta #18)."
           },
           {
             "id": "aq3",
-            "question": "3. Qual è il vero movente dell'assassino e cosa aveva appena scoperto il Professore esaminando il 'Codex Vallis'?",
-            "officialAnswer": "Il Professore aveva scoperto con la lampada UV che 4 miniature del '200 del Codex Vallis erano state sostituite con falsi invecchiati al Genepy e contrabbandate a Lione da Suor Cecilia nelle casse di liquore (per 680.000 €).",
+            "question": "3. In quale luogo esatto e a che ora è avvenuto il decesso?",
+            "officialAnswer": "Nello Scriptorium (al piano superiore), alle ore 21:59 (dopo l'aggressione delle 21:56).",
             "acceptedKeywords": [
-              ["codex", "miniature", "pergamene", "falsi", "uv", "lione", "contrabbando", "casse", "680", "1,4"]
+              ["scriptorium", "studio", "piano superiore"],
+              ["21:59", "22:00", "21:56", "21.59", "22.00"]
             ],
-            "explanation": "Alle 21:54 il Prof. Dalmasso aveva documentato con la lampada UV che le 4 miniature più preziose del 'Codex Vallis' erano state sostituite con copie moderne invecchiate col decotto di Genepy. Suor Cecilia usava le spedizioni delle casse di liquore dell'Erboristeria per esportare le pergamene autentiche a un ricettatore di Lione per 680.000 € (Carta #20)."
+            "explanation": "Il Professore è stato aggredito alle 21:56 nello Scriptorium ed è morto alle 21:59, come dimostrato sia dal sensore glicemico CGM (Carta #12) sia dal calcolo della temperatura epatica (34,0 °C alle 23:30 con calo di 2 °C/ora = 1,5 ore prima → ~22:00, Carta #04)."
           },
           {
             "id": "aq4",
-            "question": "4. Chi ha colpito il cranio del Professore con il candelabro di bronzo e perché quel colpo non è stato la causa della morte?",
-            "officialAnswer": "Padre Anselmo Viret lo ha colpito alle 22:18 nello Scriptorium, ma la ferita era post-mortem (esangue) perché il Professore era già morto alle 21:59 per l'iniezione di Suor Cecilia.",
+            "question": "4. Qual è il movente che ha spinto l'assassino ad agire?",
+            "officialAnswer": "Impedire che il Professore denunciasse il furto di 4 miniature duecentesche del 'Codex Vallis' (sostituite con falsi invecchiati al Genepy) che Suor Cecilia contrabbandava a Lione nelle casse di liquore per 680.000 €.",
             "acceptedKeywords": [
-              ["anselmo", "priore", "viret", "padre"],
-              ["post-mortem", "post mortem", "già morto", "esangue", "22:18", "21:59", "cadavere"]
+              ["codex", "miniature", "pergamene", "fogli", "falsi", "lione", "contrabbando", "680", "1,4"]
             ],
-            "explanation": "Padre Anselmo è entrato nello Scriptorium alle 22:15 (lasciando le tracce del puntale in ottone del bastone e cera d'api, Carta #13). Vedendo un movimento passivo del braccio del corpo nel buio mentre cercava di prendere il manoscritto, lo ha colpito alla nuca col candelabro alle 22:18 (Carta #14), quando Gregorio era già morto da 19 minuti (ferita completamente esangue all'autopsia, Carta #10)."
+            "explanation": "Alle 21:54, grazie alla lampada UV, il Professore aveva scoperto che 4 miniature del 'Codex Vallis' erano state sostituite con falsi invecchiati col decotto di Genepy e spedite a Lione nelle casse dell'Erboristeria (Carta #20)."
           },
           {
             "id": "aq5",
-            "question": "5. Chi aveva avvelenato il bicchierino di liquore Genepy nello Scriptorium e che fine ha fatto quel liquore?",
-            "officialAnswer": "La Dott.ssa Miriam Alverà lo aveva avvelenato alle 21:38 con Orpimento (Arsenico), ma il Professore ha sentito l'odore sulfureo e lo ha versato nella fioriera dello Scriptorium senza berlo.",
+            "question": "5. Come si spiega la scena ritrovata nella Cripta e chi vi è intervenuto dopo la morte?",
+            "officialAnswer": "Alle 22:18 Padre Anselmo ha colpito col candelabro il corpo già morto nello Scriptorium credendolo vivo; poi ha pagato il manutentore Marco Chabod che durante il blackout manuale (22:28-22:39) ha trasportato il corpo nella Cripta e spostato l'orologio sulle 22:40.",
             "acceptedKeywords": [
-              ["miriam", "alverà", "alvera", "chimica"],
-              ["fioriera", "versato", "pianta", "terra", "non l'ha bevuto", "non ha bevuto", "arsenico", "orpimento"]
+              ["anselmo", "priore", "viret", "chabod", "marco", "manutentore"],
+              ["spostato", "trasportato", "blackout", "candelabro", "orologio", "22:40", "22:18", "22:28", "messinscena", "post-mortem"]
             ],
-            "explanation": "Miriam Alverà ha versato 180 mg di Orpimento (trisolfuro di arsenico) nel bicchierino sul vassoio incustodito alle 21:38 per coprire un piccolo furto di frammenti (Carta #17). Tuttavia alle 21:48 il Professore ha notato il precipitato giallo sulfureo e ha rovesciato il liquore nella terra della fioriera dello Scriptorium senza berne una goccia (Carte #03, #10, #11)."
+            "explanation": "Padre Anselmo è entrato nello Scriptorium alle 22:15 e, vedendo scivolare il braccio del cadavere al buio, lo ha colpito alla nuca col candelabro alle 22:18 (ferita esangue post-mortem, Carte #10, #13, #14). Credendo di averlo ucciso, ha pagato Marco Chabod per simulare una caduta: alle 22:28 Chabod ha staccato la corrente, portato il corpo ai piedi della scala della Cripta (impronte taglia 45) e regolato l'orologio sulle 22:40 rompendolo col tacco (Carte #04, #15, #16)."
           },
           {
             "id": "aq6",
-            "question": "6. Chi ha provocato il blackout delle 22:28 e spostato il cadavere nella Cripta, e quali tracce fisiche lo inchiodano?",
-            "officialAnswer": "Il manutentore Marco Chabod (pagato da Padre Anselmo con 20.000 €), inchiodato dalla manomissione manuale del quadro elettrico e dalle impronte di scarponi chiodati taglia 45 (anche sul vetro dell'orologio).",
+            "question": "6. Quali altri illeciti o tentativi di reato sono stati commessi nell'Eremo quella sera?",
+            "officialAnswer": "La Dott.ssa Miriam Alverà aveva tentato di avvelenare il Professore alle 21:38 versando Orpimento (Arsenico) nel bicchierino di Genepy, ma la vittima ha notato il precipitato e lo ha gettato nella fioriera.",
             "acceptedKeywords": [
-              ["marco", "chabod", "manutentore", "custode", "guardiano"],
-              ["45", "scarponi", "chiodati", "quadro", "interruttore", "generatore", "anselmo"]
+              ["miriam", "alverà", "alvera", "chimica", "orpimento", "arsenico", "genepy", "fioriera"]
             ],
-            "explanation": "Credendo che Padre Anselmo avesse ucciso il Professore col candelabro, il manutentore Marco Chabod ha accettato 20.000 € per simulare una caduta: alle 22:28 ha abbassato manualmente l'interruttore generale, ha trasportato il corpo dallo Scriptorium ai piedi della scala della Cripta lasciando impronte di scarponi chiodati taglia 45 e ha fracassato l'orologio sulle 22:40 (Carte #04, #15, #16)."
+            "explanation": "Alle 21:38 Miriam Alverà aveva versato 180 mg di Orpimento (trisolfuro di arsenico) nel bicchierino di Genepy sul vassoio incustodito per coprire il furto di due frammenti minori (Carta #17). Il Professore però si è accorto del deposito sulfureo alle 21:48 e ha versato il liquore nella fioriera senza berlo (Carte #03, #11)."
           }
         ]
       }

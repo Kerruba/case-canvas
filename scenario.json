@@ -197,19 +197,19 @@
     },
     {
       "id": "q4",
-      "question": "4. Chi ha tentato (senza successo) di avvelenare la vittima con il caffè alla Tassina B e come ha cercato di depistare le indagini?",
+      "question": "4. Quale altro tentativo o depistaggio è avvenuto in serata riguardo alla tazzina di caffè?",
       "options": [
-        "Clara Valli, usando il codice di Beatrice per entrare nella serra",
-        "Lorenzo Morosini, entrando dalla finestra con l'impermeabile verde oliva",
-        "Beatrice Sartori, preparando l'infuso di Taxus in serra (21:22-21:38) con l'impermeabile di Clara e posando la tazzina a destra",
-        "Matteo Rinaldi, preparando due veleni diversi per sicurezza"
+        "Clara Valli ha avvelenato il caffè usando il codice di Beatrice per entrare nella serra",
+        "Lorenzo Morosini è entrato dalla finestra con l'impermeabile verde oliva",
+        "Beatrice Sartori ha preparato un infuso di Taxus in serra (21:22-21:38) con l'impermeabile di Clara e posato la tazzina a destra, ma la vittima non l'ha mai bevuto",
+        "Matteo Rinaldi ha avvelenato anche il caffè come piano di riserva"
       ],
       "correctOptionIndex": 2,
       "explanation": "Beatrice Sartori (taglia 38, codice #9901, esperta di Taxus baccata) è entrata in serra tra le 21:22 e le 21:38 indossando l'impermeabile verde oliva di Clara Valli per incastrarla (Carte #05, #08, #10). Ha portato il caffè avvelenato alle 21:39 posandolo a destra (da destrorsa, mentre Edoardo era mancino), ma Edoardo era in bagno e morì pochi minuti dopo per il collirio senza mai toccare la tazzina (Carte #01, #06, #07)."
     },
     {
       "id": "q5",
-      "question": "5. Perché il cadavere presentava ipostasi sul dorso pur essendo stato trovato prono sulla scrivania?",
+      "question": "5. Come si spiega la posizione del cadavere ritrovato sulla scrivania rispetto ai rilievi medico-legali?",
       "options": [
         "È un effetto chimico secondario dell'avvelenamento da Aconitina",
         "La vittima è morta supina sul pavimento del bagno alle 21:51 e Rinaldi l'ha spostata sulla scrivania alle 23:05 per simulare un malore al lavoro",

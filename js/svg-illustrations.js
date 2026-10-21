@@ -735,12 +735,12 @@ window.ProfilerIllustrations = {
         <rect x="0" y="0" width="148" height="106" rx="2" fill="#fafaf9" stroke="#1c1917" stroke-width="1.6"/>
         <text x="10" y="18" fill="#991b1b" font-family="Courier Prime, monospace" font-size="8.5" font-weight="bold">QUESITI DELLA PROCURA</text>
         <line x1="10" y1="23" x2="138" y2="23" stroke="#1c1917" stroke-width="1"/>
-        <text x="10" y="37" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">1. Assassino &amp; Arma reale?</text>
-        <text x="10" y="50" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">2. Ora morte vs Orologio?</text>
-        <text x="10" y="63" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">3. Movente &amp; Codex Vallis?</text>
-        <text x="10" y="76" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">4. Chi colpisce col bronzo?</text>
-        <text x="10" y="89" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">5. Chi avvelena il Genepy?</text>
-        <text x="10" y="101" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">6. Chi sposta il corpo?</text>
+        <text x="10" y="37" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">1. Chi è l'assassino?</text>
+        <text x="10" y="50" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">2. Causa della morte?</text>
+        <text x="10" y="63" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">3. Luogo e ora decesso?</text>
+        <text x="10" y="76" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">4. Qual è il movente?</text>
+        <text x="10" y="89" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">5. Dinamica della scena?</text>
+        <text x="10" y="101" fill="#1c1917" font-family="Courier Prime, monospace" font-size="7.3">6. Altri illeciti?</text>
         <circle cx="132" cy="90" r="9" fill="#b91c1c" stroke="#1c1917" stroke-width="1.2"/>
       </g>
     `,

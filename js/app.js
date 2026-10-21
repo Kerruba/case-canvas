@@ -31,6 +31,11 @@
       badgeBg: 'bg-amber-800 text-amber-50 border-amber-600',
       headerAccent: 'border-l-4 border-l-amber-700',
       icon: 'map-pin'
+    },
+    'Estratto / Nota': {
+      badgeBg: 'bg-purple-800 text-purple-50 border-purple-500',
+      headerAccent: 'border-l-4 border-l-purple-600',
+      icon: 'file-text'
     }
   };
 
@@ -116,6 +121,7 @@
     scenario: null,
     drawnCount: 0,
     cardsState: {},     // cardId -> { x, y, note, important, archived, collapsed, highlights: [{text, color}], zIndex }
+    customCards: [],    // [{ id, number, title, category, timestamp, rawText, sourceCardId, sourceCardNumber, isCustom: true }]
     groups: [],         // [{ id, title, x, y, width, height, theme }]
     connections: [],    // [{ id, from, to, label }]
     timelineEvents: [], // [{ id, time, label, cardId, color }]
@@ -266,6 +272,7 @@
         const parsed = JSON.parse(savedRaw);
         state.drawnCount = parsed.drawnCount ?? 1;
         state.cardsState = parsed.cardsState || {};
+        state.customCards = Array.isArray(parsed.customCards) ? parsed.customCards : [];
         state.groups = parsed.groups || getDefaultGroups();
         state.connections = parsed.connections || [];
         state.timelineEvents = parsed.timelineEvents || [];
@@ -347,6 +354,7 @@
   function resetBoardStateToDefaults() {
     state.drawnCount = 0;
     state.cardsState = {};
+    state.customCards = [];
     state.groups = getDefaultGroups();
     state.connections = [];
     state.timelineEvents = [];
@@ -374,6 +382,7 @@
     const payload = {
       drawnCount: state.drawnCount,
       cardsState: state.cardsState,
+      customCards: state.customCards,
       groups: state.groups,
       connections: state.connections,
       timelineEvents: state.timelineEvents,
@@ -512,6 +521,133 @@
     return '';
   }
 
+  function getActiveCards() {
+    const drawnScenarioCards = state.scenario ? state.scenario.cards.slice(0, state.drawnCount) : [];
+    const custom = Array.isArray(state.customCards) ? state.customCards : [];
+    return [...drawnScenarioCards, ...custom];
+  }
+
+  function findCardById(cardId) {
+    if (!cardId) return null;
+    if (state.scenario && Array.isArray(state.scenario.cards)) {
+      const found = state.scenario.cards.find(c => c.id === cardId);
+      if (found) return found;
+    }
+    if (Array.isArray(state.customCards)) {
+      const foundCustom = state.customCards.find(c => c.id === cardId);
+      if (foundCustom) return foundCustom;
+    }
+    return null;
+  }
+
+  /**
+   * Creates a standalone Custom Card / Dedicated Note on the board from a selected text snippet
+   * (or from scratch when sourceCardId is null).
+   */
+  function createCustomCardFromSnippet(sourceCardId, rawSnippet, customTitle = '') {
+    if (!Array.isArray(state.customCards)) {
+      state.customCards = [];
+    }
+    const sourceCard = sourceCardId ? findCardById(sourceCardId) : null;
+    const cleanText = (rawSnippet || '').trim();
+
+    // Compute sequential note number (#N1, #N2, ...)
+    const nextIdx = state.customCards.length + 1;
+    const noteNumber = `#N${nextIdx}`;
+
+    // Determine an intelligent default title
+    let derivedTitle = customTitle.trim();
+    if (!derivedTitle) {
+      if (/quesiti|domand/i.test(cleanText)) {
+        derivedTitle = sourceCard
+          ? `Quesiti della Procura (da ${sourceCard.number})`
+          : 'Quesiti della Procura';
+      } else if (cleanText) {
+        const firstLine = cleanText.split('\n')[0].replace(/^[•\-*\s]+/, '').trim();
+        const shortSnippet = firstLine.length > 44 ? firstLine.slice(0, 44) + '…' : firstLine;
+        derivedTitle = sourceCard
+          ? `Estratto ${sourceCard.number}: ${shortSnippet}`
+          : shortSnippet;
+      } else {
+        derivedTitle = `Nota Investigativa ${noteNumber}`;
+      }
+    }
+
+    const newCardId = 'note-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    const parentGroupId = (sourceCardId && state.cardsState[sourceCardId]?.groupId)
+      ? state.cardsState[sourceCardId].groupId
+      : null;
+
+    const customCardObj = {
+      id: newCardId,
+      number: noteNumber,
+      title: derivedTitle,
+      category: 'Estratto / Nota',
+      timestamp: sourceCard ? `Estratto da ${sourceCard.number}` : 'Nota dedicata',
+      rawText: cleanText || 'Scrivi qui il testo della nota dedicata...',
+      sourceCardId: sourceCard ? sourceCard.id : null,
+      sourceCardNumber: sourceCard ? sourceCard.number : null,
+      isCustom: true
+    };
+
+    state.customCards.push(customCardObj);
+    state.maxZIndex += 1;
+    state.cardsState[newCardId] = {
+      groupId: parentGroupId,
+      note: '',
+      important: /quesiti/i.test(cleanText),
+      archived: false,
+      collapsed: false,
+      highlights: [],
+      zIndex: state.maxZIndex,
+      justDrawn: true
+    };
+
+    state.selectedCards.clear();
+    state.selectedCards.add(newCardId);
+
+    window.getSelection()?.removeAllRanges();
+    hideTextSelectionToolbar();
+    renderAll();
+    saveState();
+
+    setTimeout(() => {
+      const domCard = document.getElementById(`card-${newCardId}`);
+      if (domCard) {
+        domCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 40);
+
+    showToast(
+      sourceCard
+        ? `✂️ Creata carta dedicata ${noteNumber} ("${derivedTitle}") estratta da ${sourceCard.number}!`
+        : `📝 Creata nuova carta nota ${noteNumber} sulla lavagna!`,
+      'amber'
+    );
+
+    return customCardObj;
+  }
+
+  function deleteCustomCard(cardId) {
+    if (!Array.isArray(state.customCards)) return;
+    const target = state.customCards.find(c => c.id === cardId);
+    if (!target) return;
+
+    state.customCards = state.customCards.filter(c => c.id !== cardId);
+    delete state.cardsState[cardId];
+    state.selectedCards.delete(cardId);
+    state.connections = state.connections.filter(c => c.from !== cardId && c.to !== cardId);
+
+    if (state.inspectedCardId === cardId) {
+      dom.inspectModal.classList.add('hidden');
+      state.inspectedCardId = null;
+    }
+
+    renderAll();
+    saveState();
+    showToast(`Carta nota ${target.number} eliminata dalla lavagna`, 'stone');
+  }
+
   function renderTimeline() {
     if (!dom.timelineNodesContainer) return;
 
@@ -550,9 +686,7 @@
 
     sorted.forEach(ev => {
       const cStyle = TIMELINE_DOT_COLORS[ev.color] || TIMELINE_DOT_COLORS.amber;
-      const linkedCard = (ev.cardId && state.scenario)
-        ? state.scenario.cards.find(c => c.id === ev.cardId)
-        : null;
+      const linkedCard = ev.cardId ? findCardById(ev.cardId) : null;
       const isCardSelected = ev.cardId && state.selectedCards.has(ev.cardId);
 
       const node = document.createElement('div');
@@ -633,7 +767,7 @@
 
   function populateTimelineCardSelect(selectedCardId) {
     if (!dom.tlCardSelect || !state.scenario) return;
-    const drawnCards = state.scenario.cards.slice(0, state.drawnCount);
+    const drawnCards = getActiveCards();
     dom.tlCardSelect.innerHTML = `<option value="">— Nessuna carta collegata —</option>` +
       drawnCards.map(c => `<option value="${c.id}" ${c.id === selectedCardId ? 'selected' : ''}>${escapeHtml(c.number)} — ${escapeHtml(c.title)}</option>`).join('');
   }
@@ -685,7 +819,7 @@
 
   function updateTimelineModalLinkedCardBar(cardId) {
     if (!dom.tlLinkedActions) return;
-    const card = (cardId && state.scenario) ? state.scenario.cards.find(c => c.id === cardId) : null;
+    const card = cardId ? findCardById(cardId) : null;
     if (card) {
       dom.tlLinkedActions.classList.remove('hidden');
       dom.tlLinkedCardName.textContent = `🔗 ${card.number}: ${card.title}`;
@@ -986,8 +1120,8 @@
 
   function getCardsInGroup(group) {
     if (!state.scenario) return [];
-    const drawnCards = state.scenario.cards.slice(0, state.drawnCount);
-    return drawnCards.filter(c => {
+    const activeCards = getActiveCards();
+    return activeCards.filter(c => {
       const g = findGroupContainingCard(c.id);
       return g && g.id === group.id;
     });
@@ -1080,10 +1214,10 @@
       }
     });
 
-    const drawnCards = state.scenario.cards.slice(0, state.drawnCount);
+    const activeCards = getActiveCards();
     let unassignedCount = 0;
 
-    drawnCards.forEach(card => {
+    activeCards.forEach(card => {
       let cs = state.cardsState[card.id];
       if (!cs) {
         cs = { groupId: null, note: '', important: false, archived: false, collapsed: false, highlights: [] };
@@ -1091,7 +1225,8 @@
       }
       if (!Array.isArray(cs.highlights)) cs.highlights = [];
 
-      const catStyle = CATEGORY_STYLES[card.category] || CATEGORY_STYLES['Forense'];
+      const isCustom = Boolean(card.isCustom);
+      const catStyle = CATEGORY_STYLES[card.category] || (isCustom ? CATEGORY_STYLES['Estratto / Nota'] : CATEGORY_STYLES['Forense']);
       const isSelected = state.selectedCards.has(card.id);
       const isLinkStart = state.linkStartCardId === card.id;
       const isCollapsed = Boolean(cs.collapsed) && !cs.archived;
@@ -1099,6 +1234,7 @@
       const hasHighlights = cs.highlights.length > 0;
       const parentGroup = findGroupContainingCard(card.id);
       const parentTheme = parentGroup ? (GROUP_THEMES[parentGroup.theme] || GROUP_THEMES.amber) : null;
+      const hasProcuraQuestions = !isCustom && /QUESITI FINALI DELLA PROCURA/i.test(card.rawText || '');
 
       if (!parentGroup) {
         unassignedCount += 1;
@@ -1110,7 +1246,7 @@
         <div class="px-2.5 py-1 bg-red-950/15 border-b border-stone-300/80 flex flex-wrap items-center gap-1 shrink-0">
           ${cardConnections.map(conn => {
             const otherId = conn.from === card.id ? conn.to : conn.from;
-            const otherCard = state.scenario.cards.find(c => c.id === otherId);
+            const otherCard = findCardById(otherId);
             return `
               <div class="inline-flex items-center rounded-full bg-red-950 text-red-100 border border-red-500 text-[10.5px] font-mono-tech overflow-hidden shadow-sm">
                 <button type="button" data-jump-conn-card="${otherId}" class="px-2 py-0.5 hover:bg-red-800 font-bold transition cursor-pointer" title="Vai alla carta collegata ${otherCard ? escapeHtml(otherCard.title) : ''}">
@@ -1143,7 +1279,9 @@
         delete cs.justDrawn;
       }
 
-      const illustrationHtml = window.ProfilerIllustrations.render(card.image, card.category, card.number);
+      const illustrationHtml = (!isCustom || card.image)
+        ? window.ProfilerIllustrations.render(card.image, card.category, card.number)
+        : '';
       const formattedRawTextHtml = renderHighlightedText(card.rawText, cs.highlights);
 
       el.innerHTML = `
@@ -1153,14 +1291,19 @@
         </div>
 
         <!-- Card Header (Double click to Collapse/Expand; ONLY Collapse button here) -->
-        <div class="card-header-drag px-3 pt-2.5 pb-1.5 ${isCollapsed && !redStringsHtml ? 'rounded' : 'border-b border-stone-300 rounded-t'} bg-stone-200/75 flex flex-col gap-1 shrink-0" title="Doppio click per ridurre a solo titolo (Collapse) • Trascina o usa 📁 per cambiare gruppo">
+        <div class="card-header-drag px-3 pt-2.5 pb-1.5 ${isCollapsed && !redStringsHtml ? 'rounded' : 'border-b border-stone-300 rounded-t'} ${isCustom ? 'bg-purple-100/85' : 'bg-stone-200/75'} flex flex-col gap-1 shrink-0" title="Doppio click per ridurre a solo titolo (Collapse) • Trascina o usa 📁 per cambiare gruppo">
           <!-- Row 1: Number, Category Badge & Collapse Button Only -->
           <div class="flex items-center justify-between gap-1.5">
-            <div class="flex items-center gap-1.5">
-              <span class="font-mono-tech font-extrabold text-sm bg-stone-900 text-amber-400 px-2 py-0.5 rounded shrink-0">${escapeHtml(card.number)}</span>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-mono-tech font-extrabold text-sm ${isCustom ? 'bg-purple-900 text-purple-100' : 'bg-stone-900 text-amber-400'} px-2 py-0.5 rounded shrink-0">${escapeHtml(card.number)}</span>
               <span class="${catStyle.badgeBg} text-[10.5px] font-mono-tech uppercase px-2 py-0.5 rounded font-bold border shrink-0">
                 ${escapeHtml(card.category)}
               </span>
+              ${card.sourceCardId ? `
+                <button type="button" data-jump-source-card="${escapeHtml(card.sourceCardId)}" class="px-1.5 py-0.5 rounded bg-stone-800 hover:bg-amber-500 text-amber-300 hover:text-stone-950 font-mono-tech font-bold text-[10px] transition cursor-pointer" title="Vai alla carta originale da cui è stato estratto questo testo">
+                  🔗 Da ${escapeHtml(card.sourceCardNumber || 'carta')}
+                </button>
+              ` : ''}
             </div>
             <div class="flex items-center gap-1 shrink-0">
               ${isCollapsed && parentTheme ? `<span class="w-2.5 h-2.5 rounded-full ${parentTheme.dot}" title="Nel gruppo: ${escapeHtml(parentGroup.title)}"></span>` : ''}
@@ -1172,14 +1315,30 @@
             </div>
           </div>
 
-          <!-- Row 2: Full Un-truncated Card Title -->
-          <div class="font-extrabold text-[14px] text-stone-900 leading-snug whitespace-normal break-words pt-0.5">
-            ${escapeHtml(card.title)}
-          </div>
+          <!-- Row 2: Full Un-truncated Card Title (Editable on custom cards) -->
+          ${isCustom ? `
+            <input type="text" value="${escapeHtml(card.title)}"
+              class="custom-card-title-input font-extrabold text-[14px] text-stone-900 bg-white/70 focus:bg-white border border-purple-300/90 focus:border-purple-600 rounded px-1.5 py-0.5 leading-snug w-full focus:outline-none"
+              title="Clicca per rinominare questa carta/nota estratta" />
+          ` : `
+            <div class="font-extrabold text-[14px] text-stone-900 leading-snug whitespace-normal break-words pt-0.5">
+              ${escapeHtml(card.title)}
+            </div>
+          `}
 
-          <!-- Row 3: Timestamp -->
+          <!-- Row 3: Timestamp / Origin -->
           <div class="flex items-center justify-between text-xs text-stone-600">
-            <span class="font-mono-tech font-semibold text-stone-700">🕒 ${escapeHtml(card.timestamp)}</span>
+            <span class="font-mono-tech font-semibold text-stone-700">${isCustom ? '✂️' : '🕒'} ${escapeHtml(card.timestamp)}</span>
+            ${hasProcuraQuestions ? `
+              <button type="button" class="btn-extract-questions px-2 py-0.5 rounded bg-purple-800 hover:bg-purple-700 text-purple-100 font-mono-tech font-bold text-[10px] shadow-xs transition cursor-pointer" title="Estrai i Quesiti della Procura in una Carta/Nota dedicata sempre a portata di mano">
+                ✂️ Estrai Quesiti
+              </button>
+            ` : ''}
+            ${isCustom ? `
+              <button type="button" class="btn-toggle-custom-edit px-1.5 py-0.2 rounded bg-purple-200 hover:bg-purple-300 text-purple-950 font-mono-tech font-bold text-[10px] transition cursor-pointer" title="Modifica liberamente il testo estratto">
+                ${cs.editingCustomText ? '✔ Fine modifica' : '✎ Modifica testo'}
+              </button>
+            ` : ''}
           </div>
         </div>
 
@@ -1191,16 +1350,22 @@
             <button type="button" class="btn-card-archive underline font-bold text-stone-800 cursor-pointer">Ripristina</button>
           </div>
         ` : isCollapsed ? '' : `
-          <!-- Forensic Illustration Preview (Proportional 20:9 Aspect Ratio + Click to Zoom) -->
-          <div class="card-image-preview aspect-[20/9] w-full px-2.5 pt-1.5 shrink-0 cursor-zoom-in" title="Clicca sul disegno per ingrandirlo con la lente (Zoom)">
-            ${illustrationHtml}
-          </div>
+          ${illustrationHtml ? `
+            <!-- Forensic Illustration Preview (Proportional 20:9 Aspect Ratio + Click to Zoom) -->
+            <div class="card-image-preview aspect-[20/9] w-full px-2.5 pt-1.5 shrink-0 cursor-zoom-in" title="Clicca sul disegno per ingrandirlo con la lente (Zoom)">
+              ${illustrationHtml}
+            </div>
+          ` : ''}
 
-          <!-- Objective Typewriter Raw Text (Selectable for Copy/Paste, Highlighting & Timeline!) -->
-          <div class="card-text-scroll-area px-2.5 py-1.5 flex-1 min-h-0 max-h-[155px] overflow-y-auto evidence-scroll">
-            <div data-evidence-card-id="${card.id}"
-              class="card-raw-text selectable-evidence-text font-typewriter text-[12.2px] leading-[1.44] p-2.5 text-stone-900 whitespace-pre-line bg-white/85 rounded border border-stone-300/90 shadow-inner"
-              title="Seleziona il testo o un orario col mouse per copiarlo, evidenziarlo o inviarlo alla Timeline">${formattedRawTextHtml}</div>
+          <!-- Objective Typewriter Raw Text (Selectable for Copy/Paste, Highlighting, Extract & Timeline!) -->
+          <div class="card-text-scroll-area px-2.5 py-1.5 flex-1 min-h-0 ${isCustom ? 'max-h-[215px]' : 'max-h-[155px]'} overflow-y-auto evidence-scroll">
+            ${isCustom && cs.editingCustomText ? `
+              <textarea rows="6" class="custom-card-body-input selectable-evidence-text font-typewriter text-[12.2px] leading-[1.44] p-2.5 w-full text-stone-900 bg-white rounded border-2 border-purple-500 shadow-inner focus:outline-none resize-y" placeholder="Scrivi o modifica il testo estratto...">${escapeHtml(card.rawText)}</textarea>
+            ` : `
+              <div data-evidence-card-id="${card.id}"
+                class="card-raw-text selectable-evidence-text font-typewriter text-[12.2px] leading-[1.44] p-2.5 text-stone-900 whitespace-pre-line bg-white/85 rounded border border-stone-300/90 shadow-inner"
+                title="Seleziona una parte di testo col mouse per copiarla, evidenziarla, inviarla alla Timeline o estrarla in una nuova Carta (✂️ Estrai in Carta)">${formattedRawTextHtml}</div>
+            `}
           </div>
 
           <!-- Personal Sticky Note (Post-it Giallo) -->
@@ -1230,9 +1395,15 @@
               <button type="button" class="btn-card-important px-2 py-0.5 rounded hover:bg-amber-200/90 transition text-xs cursor-pointer border ${cs.important ? 'bg-amber-300 text-amber-950 border-amber-500 font-bold' : 'bg-stone-300/60 text-stone-600 border-stone-400/40'}" title="Segna come Importante (Bordo Dorato)">
                 📌
               </button>
-              <button type="button" class="btn-card-archive px-2 py-0.5 rounded hover:bg-stone-300 transition text-xs cursor-pointer border ${cs.archived ? 'bg-stone-800 text-white border-stone-900' : 'bg-stone-300/60 text-stone-600 border-stone-400/40'}" title="${cs.archived ? 'Ripristina carta' : 'Segna come Pista Falsa / Archivia (Opacità 40%)'}">
-                🗑️
-              </button>
+              ${isCustom ? `
+                <button type="button" class="btn-custom-card-delete px-2 py-0.5 rounded bg-red-100 hover:bg-red-600 text-red-800 hover:text-white transition text-xs cursor-pointer border border-red-300" title="Elimina definitivamente questa nota/carta estratta">
+                  🗑️
+                </button>
+              ` : `
+                <button type="button" class="btn-card-archive px-2 py-0.5 rounded hover:bg-stone-300 transition text-xs cursor-pointer border ${cs.archived ? 'bg-stone-800 text-white border-stone-900' : 'bg-stone-300/60 text-stone-600 border-stone-400/40'}" title="${cs.archived ? 'Ripristina carta' : 'Segna come Pista Falsa / Archivia (Opacità 40%)'}">
+                  🗑️
+                </button>
+              `}
             </div>
             <button type="button" class="btn-card-inspect px-2.5 py-0.5 rounded bg-stone-800 hover:bg-amber-600 text-stone-100 hover:text-stone-950 font-bold transition text-xs flex items-center gap-1 cursor-pointer shrink-0 shadow-sm" title="Ingrandisci e ispeziona il reperto ad alta risoluzione">
               <span>🔍</span>
@@ -1311,9 +1482,79 @@
     const headerDrag = cardEl.querySelector('.card-header-drag');
     if (headerDrag) {
       headerDrag.addEventListener('dblclick', e => {
-        if (e.target.tagName === 'BUTTON') return;
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
         e.stopPropagation();
         toggleCardCollapsed(cardId);
+      });
+    }
+
+    // Custom Card inline title & body editing + source jump + delete + 1-click extract questions
+    const customTitleInput = cardEl.querySelector('.custom-card-title-input');
+    if (customTitleInput) {
+      customTitleInput.addEventListener('mousedown', e => e.stopPropagation());
+      customTitleInput.addEventListener('click', e => e.stopPropagation());
+      customTitleInput.addEventListener('input', e => {
+        const card = findCardById(cardId);
+        if (card) {
+          card.title = e.target.value;
+          saveState();
+        }
+      });
+    }
+
+    const btnToggleCustomEdit = cardEl.querySelector('.btn-toggle-custom-edit');
+    if (btnToggleCustomEdit) {
+      btnToggleCustomEdit.addEventListener('mousedown', e => e.stopPropagation());
+      btnToggleCustomEdit.addEventListener('click', e => {
+        e.stopPropagation();
+        if (state.cardsState[cardId]) {
+          state.cardsState[cardId].editingCustomText = !state.cardsState[cardId].editingCustomText;
+          renderBoard();
+          saveState();
+        }
+      });
+    }
+
+    const customBodyInput = cardEl.querySelector('.custom-card-body-input');
+    if (customBodyInput) {
+      customBodyInput.addEventListener('mousedown', e => e.stopPropagation());
+      customBodyInput.addEventListener('click', e => e.stopPropagation());
+      customBodyInput.addEventListener('input', e => {
+        const card = findCardById(cardId);
+        if (card) {
+          card.rawText = e.target.value;
+          saveState();
+        }
+      });
+    }
+
+    cardEl.querySelectorAll('[data-jump-source-card]').forEach(btn => {
+      btn.addEventListener('mousedown', e => e.stopPropagation());
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        focusCardOnBoard(btn.dataset.jumpSourceCard);
+      });
+    });
+
+    const btnExtractQuestions = cardEl.querySelector('.btn-extract-questions');
+    if (btnExtractQuestions) {
+      btnExtractQuestions.addEventListener('mousedown', e => e.stopPropagation());
+      btnExtractQuestions.addEventListener('click', e => {
+        e.stopPropagation();
+        const card = findCardById(cardId);
+        if (!card) return;
+        const idx = card.rawText.search(/QUESITI FINALI DELLA PROCURA/i);
+        const snippet = idx !== -1 ? card.rawText.slice(idx).trim() : card.rawText;
+        createCustomCardFromSnippet(cardId, snippet, `Quesiti della Procura (${card.number})`);
+      });
+    }
+
+    const btnCustomDelete = cardEl.querySelector('.btn-custom-card-delete');
+    if (btnCustomDelete) {
+      btnCustomDelete.addEventListener('mousedown', e => e.stopPropagation());
+      btnCustomDelete.addEventListener('click', e => {
+        e.stopPropagation();
+        deleteCustomCard(cardId);
       });
     }
 
@@ -1322,7 +1563,7 @@
       btnTimeline.addEventListener('mousedown', e => e.stopPropagation());
       btnTimeline.addEventListener('click', e => {
         e.stopPropagation();
-        const card = state.scenario?.cards.find(c => c.id === cardId);
+        const card = findCardById(cardId);
         const extractedTime = card ? extractTimeFromSnippet('', card.timestamp) : '';
         openTimelineModal({
           prefillTime: extractedTime,
@@ -1593,7 +1834,7 @@
     }
 
     if (cardIdsToAdd.length === 1 && state.scenario) {
-      const card = state.scenario.cards.find(c => c.id === cardIdsToAdd[0]);
+      const card = findCardById(cardIdsToAdd[0]);
       showToast(
         `${card ? 'Carta ' + card.number : 'Carta'} aggiunta a "${group.title}"`,
         'amber'
@@ -1733,7 +1974,7 @@
     if (dom.linkModeBanner) {
       dom.linkModeBanner.classList.toggle('hidden', !active);
       if (state.linkStartCardId && state.scenario) {
-        const card = state.scenario.cards.find(c => c.id === state.linkStartCardId);
+        const card = findCardById(state.linkStartCardId);
         dom.linkBannerText.textContent = `🧶 Filo Rosso agganciato a ${card ? card.number : ''} — Clicca sulla seconda carta per collegarla (ESC per annullare)`;
       } else {
         dom.linkBannerText.textContent = `🧶 Modalità Filo Rosso attiva — Clicca sulla prima carta o su una puntina`;
@@ -1835,7 +2076,7 @@
       }
       if (count === 1 && state.scenario) {
         const onlyId = Array.from(state.selectedCards)[0];
-        const card = state.scenario.cards.find(c => c.id === onlyId);
+        const card = findCardById(onlyId);
         dom.multiSelectCount.textContent = card ? `Carta ${card.number} selezionata` : '1 carta selezionata';
       } else {
         dom.multiSelectCount.textContent = `${count} carte selezionate`;
@@ -1854,12 +2095,13 @@
 
   function openInspectModal(cardId) {
     if (!state.scenario) return;
-    const card = state.scenario.cards.find(c => c.id === cardId);
+    const card = findCardById(cardId);
     if (!card) return;
     state.inspectedCardId = cardId;
+    const isCustom = Boolean(card.isCustom);
     const cs = state.cardsState[cardId] || { highlights: [] };
     if (!Array.isArray(cs.highlights)) cs.highlights = [];
-    const catStyle = CATEGORY_STYLES[card.category] || CATEGORY_STYLES['Forense'];
+    const catStyle = CATEGORY_STYLES[card.category] || (isCustom ? CATEGORY_STYLES['Estratto / Nota'] : CATEGORY_STYLES['Forense']);
     const currentGroup = findGroupContainingCard(cardId);
 
     const linkedStrings = state.connections.filter(c => c.from === cardId || c.to === cardId);
@@ -1867,7 +2109,7 @@
       ? `<p class="text-xs text-stone-500 italic">Nessun filo rosso collegato a questo reperto.</p>`
       : linkedStrings.map(conn => {
           const otherId = conn.from === cardId ? conn.to : conn.from;
-          const otherCard = state.scenario.cards.find(c => c.id === otherId);
+          const otherCard = findCardById(otherId);
           return `
             <div class="flex items-center justify-between bg-stone-900/90 border border-red-900/60 px-2.5 py-1.5 rounded text-xs">
               <div class="flex items-center gap-2">
@@ -1886,23 +2128,37 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Left column: High-Res Evidence Visual & Status -->
         <div class="lg:col-span-5 flex flex-col gap-4">
-          <div class="flex flex-col gap-1.5">
-            <div class="flex items-center justify-between px-1">
-              <span class="text-[11px] font-mono-tech uppercase text-amber-400 font-bold">🎨 Tavola Illustrata (Zoom &amp; Trascina)</span>
-              <div class="flex items-center gap-1">
-                <button type="button" id="modal-img-zoom-out" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded text-[11px] font-mono-tech font-bold cursor-pointer" title="Riduci zoom disegno">－</button>
-                <span id="modal-img-zoom-label" class="text-[10px] font-mono-tech text-amber-300 min-w-[40px] text-center">100%</span>
-                <button type="button" id="modal-img-zoom-in" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded text-[11px] font-mono-tech font-bold cursor-pointer" title="Aumenta zoom disegno">＋</button>
-                <button type="button" id="modal-img-zoom-reset" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 rounded text-[10px] font-mono-tech cursor-pointer" title="Reset 100%">100%</button>
-                <button type="button" id="modal-img-fullscreen" class="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[10px] font-bold cursor-pointer" title="Apri il disegno a tutto schermo con la lente">⛶ Lente</button>
+          ${(!isCustom || card.image) ? `
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between px-1">
+                <span class="text-[11px] font-mono-tech uppercase text-amber-400 font-bold">🎨 Tavola Illustrata (Zoom &amp; Trascina)</span>
+                <div class="flex items-center gap-1">
+                  <button type="button" id="modal-img-zoom-out" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded text-[11px] font-mono-tech font-bold cursor-pointer" title="Riduci zoom disegno">－</button>
+                  <span id="modal-img-zoom-label" class="text-[10px] font-mono-tech text-amber-300 min-w-[40px] text-center">100%</span>
+                  <button type="button" id="modal-img-zoom-in" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded text-[11px] font-mono-tech font-bold cursor-pointer" title="Aumenta zoom disegno">＋</button>
+                  <button type="button" id="modal-img-zoom-reset" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 rounded text-[10px] font-mono-tech cursor-pointer" title="Reset 100%">100%</button>
+                  <button type="button" id="modal-img-fullscreen" class="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[10px] font-bold cursor-pointer" title="Apri il disegno a tutto schermo con la lente">⛶ Lente</button>
+                </div>
+              </div>
+              <div id="modal-img-viewport" class="aspect-[20/9] w-full rounded-lg overflow-hidden border-2 border-stone-700 shadow-inner bg-[#ede3ce] relative cursor-grab active:cursor-grabbing select-none" style="touch-action: none;" title="Usa la rotellina per zoomare • Trascina per muoverti nel disegno">
+                <div id="modal-img-stage" class="w-full h-full origin-center transition-transform duration-75">
+                  ${window.ProfilerIllustrations.render(card.image, card.category, card.number, { showZoomHint: false })}
+                </div>
               </div>
             </div>
-            <div id="modal-img-viewport" class="aspect-[20/9] w-full rounded-lg overflow-hidden border-2 border-stone-700 shadow-inner bg-[#ede3ce] relative cursor-grab active:cursor-grabbing select-none" style="touch-action: none;" title="Usa la rotellina per zoomare • Trascina per muoverti nel disegno">
-              <div id="modal-img-stage" class="w-full h-full origin-center transition-transform duration-75">
-                ${window.ProfilerIllustrations.render(card.image, card.category, card.number, { showZoomHint: false })}
+          ` : `
+            <div class="bg-purple-950/30 border border-purple-500/50 rounded-lg p-3.5 text-xs text-purple-200 flex items-center justify-between gap-2">
+              <div>
+                <div class="font-mono-tech font-bold uppercase text-purple-300">✂️ Carta / Nota Dedicata</div>
+                <div class="text-stone-300 mt-0.5">${card.sourceCardNumber ? `Estratta dalla Carta ${escapeHtml(card.sourceCardNumber)}` : 'Creata manualmente sulla lavagna'}</div>
               </div>
+              ${card.sourceCardId ? `
+                <button type="button" data-open-card="${escapeHtml(card.sourceCardId)}" class="px-2.5 py-1 rounded bg-purple-800 hover:bg-purple-700 text-white font-mono-tech font-bold text-xs cursor-pointer shrink-0">
+                  🔗 Apri ${escapeHtml(card.sourceCardNumber)}
+                </button>
+              ` : ''}
             </div>
-          </div>
+          `}
 
           <div class="bg-stone-900/90 border border-stone-700/80 rounded-lg p-3.5 flex flex-col gap-2.5">
             <div class="text-[11px] font-mono-tech uppercase text-stone-400 tracking-wider">Stato &amp; Gruppo sulla Lavagna</div>
@@ -1916,8 +2172,8 @@
               <button type="button" id="modal-btn-important" class="py-2 px-2 rounded font-bold text-xs border transition flex items-center justify-center gap-1 cursor-pointer ${cs.important ? 'bg-amber-500 text-stone-950 border-amber-400' : 'bg-stone-800 text-stone-200 border-stone-600 hover:bg-stone-700'}">
                 📌 Importante
               </button>
-              <button type="button" id="modal-btn-archive" class="py-2 px-2 rounded font-bold text-xs border transition flex items-center justify-center gap-1 cursor-pointer ${cs.archived ? 'bg-red-900/80 text-red-100 border-red-500' : 'bg-stone-800 text-stone-200 border-stone-600 hover:bg-stone-700'}">
-                🗑️ ${cs.archived ? 'Archiviata' : 'Archivia'}
+              <button type="button" id="modal-btn-archive" class="py-2 px-2 rounded font-bold text-xs border transition flex items-center justify-center gap-1 cursor-pointer ${isCustom ? 'bg-red-950/90 text-red-200 border-red-600 hover:bg-red-800' : cs.archived ? 'bg-red-900/80 text-red-100 border-red-500' : 'bg-stone-800 text-stone-200 border-stone-600 hover:bg-stone-700'}">
+                🗑️ ${isCustom ? 'Elimina Nota' : cs.archived ? 'Archiviata' : 'Archivia'}
               </button>
             </div>
 
@@ -1956,7 +2212,7 @@
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono-tech text-stone-600 mb-1.5">
-              <span>💡 <b>Seleziona una frase o un orario</b> per evidenziarlo, copiarlo o inviarlo alla <b>⏱️ Timeline</b></span>
+              <span>💡 <b>Seleziona una parte di testo</b> per evidenziarla, copiarla, inviarla alla <b>⏱️ Timeline</b> o estrarla in una <b>✂️ Carta/Nota dedicata</b></span>
               ${cs.highlights.length > 0 ? `<button type="button" id="modal-btn-clear-hl" class="text-red-700 hover:underline font-bold cursor-pointer">🧽 Rimuovi evidenziazioni (${cs.highlights.length})</button>` : ''}
             </div>
 
@@ -2010,6 +2266,10 @@
       openInspectModal(cardId);
     });
     document.getElementById('modal-btn-archive').addEventListener('click', () => {
+      if (isCustom) {
+        deleteCustomCard(cardId);
+        return;
+      }
       toggleCardArchive(cardId);
       openInspectModal(cardId);
     });
@@ -2075,7 +2335,7 @@
 
   function navigateInspectModal(dir) {
     if (!state.scenario || !state.inspectedCardId) return;
-    const drawnCards = state.scenario.cards.slice(0, state.drawnCount);
+    const drawnCards = getActiveCards();
     const idx = drawnCards.findIndex(c => c.id === state.inspectedCardId);
     if (idx === -1) return;
     const nextIdx = (idx + dir + drawnCards.length) % drawnCards.length;
@@ -2319,8 +2579,13 @@
 
         <!-- Prosecutor Questions Overview (Open-Ended, Zero Spoilers) -->
         <div class="bg-amber-950/20 border border-amber-600/50 rounded-lg p-4">
-          <div class="text-xs font-mono-tech font-bold uppercase tracking-wider text-amber-400 mb-2">
-            ❓ Quesiti Ufficiali della Procura (Risposta Aperta a Fine Indagine)
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div class="text-xs font-mono-tech font-bold uppercase tracking-wider text-amber-400">
+              ❓ Quesiti Ufficiali della Procura (Risposta Aperta a Fine Indagine)
+            </div>
+            <button type="button" id="btn-dossier-extract-questions" class="px-2.5 py-1 rounded bg-purple-800 hover:bg-purple-700 text-purple-100 border border-purple-400/60 font-mono-tech font-bold text-[11px] shadow transition cursor-pointer" title="Crea sulla lavagna una Carta/Nota dedicata contenente tutti i Quesiti della Procura">
+              ✂️ Estrai Quesiti in una Carta Dedicata
+            </button>
           </div>
           <div class="flex flex-col gap-1.5 text-xs text-stone-200 font-medium">
             ${(state.scenario.solution || []).map(q => `
@@ -2330,6 +2595,13 @@
         </div>
       </div>
     `;
+
+    document.getElementById('btn-dossier-extract-questions')?.addEventListener('click', () => {
+      const questionsText = 'QUESITI FINALI DELLA PROCURA:\n' + (state.scenario.solution || []).map(q => q.question).join('\n');
+      const firstCard = state.scenario.cards?.[0];
+      createCustomCardFromSnippet(firstCard ? firstCard.id : null, questionsText, 'Quesiti Ufficiali della Procura');
+      dom.dossierModal.classList.add('hidden');
+    });
 
     dom.dossierModal.classList.remove('hidden');
   }
@@ -2629,6 +2901,13 @@
         hideTextSelectionToolbar();
       });
 
+      document.getElementById('btn-sel-to-card')?.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!state.activeSelection) return;
+        const { cardId, text } = state.activeSelection;
+        createCustomCardFromSnippet(cardId, text);
+      });
+
       document.getElementById('btn-sel-to-note').addEventListener('click', e => {
         e.stopPropagation();
         if (!state.activeSelection) return;
@@ -2653,7 +2932,7 @@
         e.stopPropagation();
         if (!state.activeSelection) return;
         const { cardId, text } = state.activeSelection;
-        const card = state.scenario?.cards.find(c => c.id === cardId);
+        const card = findCardById(cardId);
         const extractedTime = extractTimeFromSnippet(text, card ? card.timestamp : '');
         const cleanLabel = text.replace(/\s+/g, ' ').slice(0, 85);
 
@@ -2685,7 +2964,7 @@
 
     document.getElementById('btn-add-timeline-event').addEventListener('click', () => {
       const selectedCardId = state.selectedCards.size === 1 ? Array.from(state.selectedCards)[0] : '';
-      const card = (selectedCardId && state.scenario) ? state.scenario.cards.find(c => c.id === selectedCardId) : null;
+      const card = selectedCardId ? findCardById(selectedCardId) : null;
       openTimelineModal({
         prefillTime: card ? extractTimeFromSnippet('', card.timestamp) : '',
         prefillLabel: card ? card.title : '',
@@ -2803,6 +3082,15 @@
         setTimeout(() => gEl.classList.remove('group-expanded-flash'), 800);
       }
       showToast('Nuova Area di Raggruppamento aggiunta alla griglia', 'amber');
+    });
+
+    document.getElementById('btn-add-custom-card')?.addEventListener('click', () => {
+      const created = createCustomCardFromSnippet(null, '');
+      if (created && state.cardsState[created.id]) {
+        state.cardsState[created.id].editingCustomText = true;
+        renderBoard();
+        saveState();
+      }
     });
 
     dom.btnToolLink.addEventListener('click', () => {
