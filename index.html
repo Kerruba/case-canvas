@@ -105,14 +105,21 @@
           <span id="timeline-tracks-badge" class="hidden text-[10px] bg-sky-950/90 text-sky-300 px-1.5 py-0.2 rounded border border-sky-500/50" title="Linee del tempo parallele attive (vista Gantt)">1 linea</span>
           <span id="timeline-chevron" class="text-[10px] text-stone-400">▴</span>
         </button>
-        <div class="flex items-center gap-1.5">
-          <button id="btn-toggle-timeline-view" type="button" class="px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-amber-300 border border-stone-700 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer" title="Passa tra Vista Gantt (con barre d'intervallo) e Vista Classica a pallini">
-            📊 Gantt
+        <div class="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+          <!-- Current view indicator label -->
+          <div class="flex items-center gap-1 text-[10px] font-mono-tech bg-stone-900 border border-stone-800 px-1.5 py-0.5 rounded text-stone-400 shrink-0">
+            <span>Visualizzazione:</span>
+            <span id="timeline-view-label" class="font-bold text-amber-400">Gantt</span>
+          </div>
+
+          <!-- Switch button showing destination view -->
+          <button id="btn-toggle-timeline-view" type="button" class="px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-200 hover:text-amber-300 border border-stone-700 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer shrink-0" title="Passa alla visualizzazione alternativa">
+            <span>⏱️ Passa a Punti</span>
           </button>
-          <button id="btn-add-timeline-event" type="button" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer" title="Aggiungi un nuovo pallino o intervallo orario sulla linea del tempo">
+          <button id="btn-add-timeline-event" type="button" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0" title="Aggiungi un nuovo pallino o intervallo orario sulla linea del tempo">
             + Pallino
           </button>
-          <button id="btn-add-timeline-track" type="button" class="px-2.5 py-1 bg-sky-500/20 hover:bg-sky-500/35 text-sky-300 border border-sky-500/50 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer" title="Aggiungi una linea del tempo parallela (stile Gantt) per confrontare come combaciano le tempistiche">
+          <button id="btn-add-timeline-track" type="button" class="px-2.5 py-1 bg-sky-500/20 hover:bg-sky-500/35 text-sky-300 border border-sky-500/50 rounded text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0" title="Aggiungi una linea del tempo parallela (stile Gantt) per confrontare come combaciano le tempistiche">
             + Linea Parallela
           </button>
         </div>

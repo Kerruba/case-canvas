@@ -214,6 +214,7 @@
     dom.timelineChevron = document.getElementById('timeline-chevron');
     dom.btnAddTimelineTrack = document.getElementById('btn-add-timeline-track');
     dom.btnToggleTimelineView = document.getElementById('btn-toggle-timeline-view');
+    dom.timelineViewLabel = document.getElementById('timeline-view-label');
 
     // Bottom-right Deck Widget
     dom.deckCountText = document.getElementById('deck-count-text');
@@ -853,15 +854,22 @@
       isGanttMode = tracksCount > 1 || hasIntervals;
     }
 
+    if (dom.timelineViewLabel) {
+      dom.timelineViewLabel.textContent = isGanttMode ? 'Gantt' : 'Punti';
+      dom.timelineViewLabel.className = isGanttMode ? 'font-bold text-amber-400' : 'font-bold text-stone-200';
+    }
+
     if (dom.btnToggleTimelineView) {
       if (isGanttMode) {
-        dom.btnToggleTimelineView.innerHTML = `📊 Gantt <span class="text-[9px] text-amber-400 font-bold">ON</span>`;
-        dom.btnToggleTimelineView.className = 'px-2 py-1 bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-500/70 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer';
-        dom.btnToggleTimelineView.title = 'Modalità Gantt attiva con barre d\'intervallo (clicca per passare alla vista a pallini)';
+        // Current view is Gantt -> clicking switches to Punti
+        dom.btnToggleTimelineView.innerHTML = `<span>⏱️ Passa a Punti</span>`;
+        dom.btnToggleTimelineView.className = 'px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white border border-stone-700 rounded text-[11px] font-mono-tech font-semibold transition flex items-center gap-1 cursor-pointer shrink-0';
+        dom.btnToggleTimelineView.title = 'Attualmente in visualizzazione Gantt. Clicca per passare alla visualizzazione classica a punti.';
       } else {
-        dom.btnToggleTimelineView.innerHTML = `⏱️ Pallini`;
-        dom.btnToggleTimelineView.className = 'px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white border border-stone-700 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer';
-        dom.btnToggleTimelineView.title = 'Modalità classica a pallini attiva (clicca per passare alla vista Gantt con barre d\'intervallo)';
+        // Current view is Punti -> clicking switches to Gantt
+        dom.btnToggleTimelineView.innerHTML = `<span>📊 Passa a Gantt</span>`;
+        dom.btnToggleTimelineView.className = 'px-2 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/50 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer shrink-0';
+        dom.btnToggleTimelineView.title = 'Attualmente in visualizzazione punti. Clicca per passare alla visualizzazione Gantt con barre d\'intervallo.';
       }
     }
 
@@ -3639,12 +3647,16 @@
     });
 
     dom.btnToggleTimelineView?.addEventListener('click', () => {
-      if (state.timelineViewMode === 'gantt') {
+      const tracksCount = Array.isArray(state.timelineTracks) ? state.timelineTracks.length : 1;
+      const hasIntervals = state.timelineEvents.some(e => e.endTime && e.endTime.trim().length > 0);
+      const isCurrentlyGantt = state.timelineViewMode === 'gantt' || (state.timelineViewMode !== 'classic' && (tracksCount > 1 || hasIntervals));
+
+      if (isCurrentlyGantt) {
         state.timelineViewMode = 'classic';
-        showToast('Passato alla vista classica a pallini', 'stone');
+        showToast('Passato a Visualizzazione Punti', 'stone');
       } else {
         state.timelineViewMode = 'gantt';
-        showToast('Passato alla vista Gantt (con barre d\'intervallo)', 'amber');
+        showToast('Passato a Visualizzazione Gantt', 'amber');
       }
       renderTimeline();
       saveState();
