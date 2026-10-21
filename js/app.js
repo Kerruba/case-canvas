@@ -92,26 +92,58 @@
 
   const TIMELINE_DOT_COLORS = {
     amber: {
+      name: 'Ambra',
       dotBg: 'bg-amber-400',
       timeText: 'text-amber-300',
-      badgeBorder: 'border-amber-500/50'
+      badgeBorder: 'border-amber-500/50',
+      barBg: 'bg-amber-950/85 border border-amber-500/70 text-amber-100',
+      trackHeaderBg: 'bg-amber-950/40 border-amber-500/30 text-amber-300'
     },
     red: {
+      name: 'Cremisi',
       dotBg: 'bg-red-500',
       timeText: 'text-red-400',
-      badgeBorder: 'border-red-500/50'
+      badgeBorder: 'border-red-500/50',
+      barBg: 'bg-red-950/85 border border-red-500/70 text-red-100',
+      trackHeaderBg: 'bg-red-950/40 border-red-500/30 text-red-300'
     },
     blue: {
+      name: 'Blu Polizia',
       dotBg: 'bg-sky-400',
       timeText: 'text-sky-300',
-      badgeBorder: 'border-sky-500/50'
+      badgeBorder: 'border-sky-500/50',
+      barBg: 'bg-sky-950/85 border border-sky-500/70 text-sky-100',
+      trackHeaderBg: 'bg-sky-950/40 border-sky-500/30 text-sky-300'
     },
     green: {
+      name: 'Smeraldo',
       dotBg: 'bg-emerald-400',
       timeText: 'text-emerald-300',
-      badgeBorder: 'border-emerald-500/50'
+      badgeBorder: 'border-emerald-500/50',
+      barBg: 'bg-emerald-950/85 border border-emerald-500/70 text-emerald-100',
+      trackHeaderBg: 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+    },
+    purple: {
+      name: 'Viola',
+      dotBg: 'bg-purple-400',
+      timeText: 'text-purple-300',
+      badgeBorder: 'border-purple-500/50',
+      barBg: 'bg-purple-950/85 border border-purple-500/70 text-purple-100',
+      trackHeaderBg: 'bg-purple-950/40 border-purple-500/30 text-purple-300'
     }
   };
+
+  const TRACK_PALETTE = ['amber', 'blue', 'red', 'green', 'purple'];
+
+  function getDefaultTimelineTracks() {
+    return [
+      {
+        id: 'tl-track-main',
+        title: 'Linea Principale',
+        color: 'amber'
+      }
+    ];
+  }
 
   const THEME_KEYS = Object.keys(GROUP_THEMES);
 
@@ -124,8 +156,10 @@
     customCards: [],    // [{ id, number, title, category, timestamp, rawText, sourceCardId, sourceCardNumber, isCustom: true }]
     groups: [],         // [{ id, title, x, y, width, height, theme }]
     connections: [],    // [{ id, from, to, label }]
-    timelineEvents: [], // [{ id, time, label, cardId, color }]
+    timelineTracks: getDefaultTimelineTracks(), // [{ id, title, color }]
+    timelineEvents: [], // [{ id, trackId, time, endTime, label, cardId, color }]
     timelineCollapsed: false,
+    activeTimelineTrackId: 'tl-track-main',
     panX: 60,
     panY: 135,
     scale: 1,
@@ -140,6 +174,7 @@
     inspectedCardId: null,
     editingStringId: null,
     editingTimelineId: null,
+    editingTimelineTrackId: 'tl-track-main',
     editingTimelineColor: 'amber',
     groupPopoverCardId: null,
     activeSelection: null, // { cardId, text }
@@ -174,7 +209,9 @@
     dom.timelineContentArea = document.getElementById('timeline-content-area');
     dom.timelineNodesContainer = document.getElementById('timeline-nodes-container');
     dom.timelineCountBadge = document.getElementById('timeline-count-badge');
+    dom.timelineTracksBadge = document.getElementById('timeline-tracks-badge');
     dom.timelineChevron = document.getElementById('timeline-chevron');
+    dom.btnAddTimelineTrack = document.getElementById('btn-add-timeline-track');
 
     // Bottom-right Deck Widget
     dom.deckCountText = document.getElementById('deck-count-text');
@@ -210,7 +247,11 @@
 
     // Timeline Modal
     dom.timelineModal = document.getElementById('timeline-modal');
+    dom.tlTrackRow = document.getElementById('tl-track-row');
+    dom.tlTrackSelect = document.getElementById('tl-track-select');
+    dom.btnModalAddTrack = document.getElementById('btn-modal-add-track');
     dom.tlTimeInput = document.getElementById('tl-time-input');
+    dom.tlEndTimeInput = document.getElementById('tl-endtime-input');
     dom.tlLabelInput = document.getElementById('tl-label-input');
     dom.tlCardSelect = document.getElementById('tl-card-select');
     dom.tlColorPicker = document.getElementById('tl-color-picker');
@@ -275,7 +316,16 @@
         state.customCards = Array.isArray(parsed.customCards) ? parsed.customCards : [];
         state.groups = parsed.groups || getDefaultGroups();
         state.connections = parsed.connections || [];
-        state.timelineEvents = parsed.timelineEvents || [];
+        state.timelineTracks = Array.isArray(parsed.timelineTracks) && parsed.timelineTracks.length > 0
+          ? parsed.timelineTracks
+          : getDefaultTimelineTracks();
+        state.timelineEvents = Array.isArray(parsed.timelineEvents) ? parsed.timelineEvents : [];
+        const validTrackIds = new Set(state.timelineTracks.map(t => t.id));
+        state.timelineEvents.forEach(ev => {
+          if (!ev.trackId || !validTrackIds.has(ev.trackId)) {
+            ev.trackId = state.timelineTracks[0].id;
+          }
+        });
         state.timelineCollapsed = Boolean(parsed.timelineCollapsed);
         state.panX = parsed.panX ?? 50;
         state.panY = parsed.panY ?? 20;
@@ -357,6 +407,7 @@
     state.customCards = [];
     state.groups = getDefaultGroups();
     state.connections = [];
+    state.timelineTracks = getDefaultTimelineTracks();
     state.timelineEvents = [];
     state.timelineCollapsed = window.innerWidth < 640;
     state.panX = window.innerWidth < 640 ? 16 : 50;
@@ -385,6 +436,7 @@
       customCards: state.customCards,
       groups: state.groups,
       connections: state.connections,
+      timelineTracks: state.timelineTracks,
       timelineEvents: state.timelineEvents,
       timelineCollapsed: state.timelineCollapsed,
       panX: state.panX,
@@ -477,12 +529,66 @@
   }
 
   // =========================================================================
-  // TOP TIMELINE BAR & CHRONOLOGICAL ENGINE
+  // TOP TIMELINE BAR, PARALLEL TRACKS & GANTT CHRONOLOGICAL ENGINE
   // =========================================================================
 
-  function parseTimeSortKey(timeStr) {
+  function parseTimeInputAndRange(rawStart, rawEnd = '') {
+    const s = (rawStart || '').trim();
+    let e = (rawEnd || '').trim();
+    if (!e && s) {
+      // Check if user wrote a range like "21:00 - 21:45" or "dalle 21:00 alle 21:45"
+      const rangeMatch = s.match(/(?:dalle?\s+)?(\d{1,2}[:.]\d{2})\s*(?:-|–|—|alle?|a|to)\s*(\d{1,2}[:.]\d{2})/i);
+      if (rangeMatch) {
+        return {
+          time: rangeMatch[1].replace('.', ':'),
+          endTime: rangeMatch[2].replace('.', ':')
+        };
+      }
+    }
+    return {
+      time: s,
+      endTime: e
+    };
+  }
+
+  function extractTimeRangeFromSnippet(text, fallbackTimestamp) {
+    const clean = (text || '').trim();
+    const rangeMatch = clean.match(/(?:dalle?\s+)?(\d{1,2}[:.]\d{2})\s*(?:-|–|—|alle?|a)\s*(\d{1,2}[:.]\d{2})/i);
+    if (rangeMatch) {
+      return {
+        time: rangeMatch[1].replace('.', ':'),
+        endTime: rangeMatch[2].replace('.', ':')
+      };
+    }
+    const dateAndTime = clean.match(/\b(\d{1,2}\s*(?:Nov|Ott|Gen|Feb|Mar|Apr|Mag|Giu|Lug|Ago|Set|Dic)[a-z]*\s*(?:•|,|-|\s)*\s*(?:ore\s*)?\d{1,2}[:.]\d{2})/i);
+    if (dateAndTime) {
+      return { time: dateAndTime[1].replace(/\s+/g, ' ').trim(), endTime: '' };
+    }
+    const timeOnly = clean.match(/\b(\d{1,2}[:.]\d{2})\b/);
+    if (timeOnly) {
+      return { time: timeOnly[1].replace('.', ':'), endTime: '' };
+    }
+    if (fallbackTimestamp) {
+      const fbRange = fallbackTimestamp.match(/(?:dalle?\s+)?(\d{1,2}[:.]\d{2})\s*(?:-|–|—|alle?|a)\s*(\d{1,2}[:.]\d{2})/i);
+      if (fbRange) {
+        return { time: fbRange[1].replace('.', ':'), endTime: fbRange[2].replace('.', ':') };
+      }
+      const fbTime = fallbackTimestamp.match(/\b(\d{1,2}[:.]\d{2})\b/);
+      if (fbTime) {
+        return { time: fbTime[1].replace('.', ':'), endTime: '' };
+      }
+      return { time: fallbackTimestamp, endTime: '' };
+    }
+    return { time: '', endTime: '' };
+  }
+
+  function extractTimeFromSnippet(text, fallbackTimestamp) {
+    return extractTimeRangeFromSnippet(text, fallbackTimestamp).time;
+  }
+
+  function parseSingleTimePoint(timeStr, hasEveningEvents = true) {
     const raw = (timeStr || '').trim();
-    if (!raw) return 999999;
+    if (!raw) return { key: '99:99', label: '—', sortKey: 999999 };
 
     let dayOffset = 0;
     const dayMatch = raw.match(/\b(\d{1,2})\s*(?:Nov|Ott|Gen|Feb|Mar|Apr|Mag|Giu|Lug|Ago|Set|Dic)/i);
@@ -491,34 +597,94 @@
     }
 
     const timeMatch = raw.match(/(\d{1,2})[:.](\d{2})/);
-    if (!timeMatch) return dayOffset || 500000;
+    if (!timeMatch) {
+      return { key: raw, label: raw, sortKey: dayOffset || 500000 };
+    }
 
     let hours = parseInt(timeMatch[1], 10);
     const mins = parseInt(timeMatch[2], 10);
+    const canonicalKey = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 
-    if (!dayMatch && hours < 8) {
+    if (!dayMatch && hasEveningEvents && hours < 8) {
       hours += 24;
     }
 
-    return dayOffset + hours * 60 + mins;
+    return {
+      key: canonicalKey,
+      label: canonicalKey,
+      sortKey: dayOffset + hours * 60 + mins
+    };
   }
 
-  function extractTimeFromSnippet(text, fallbackTimestamp) {
-    const clean = (text || '').trim();
-    const dateAndTime = clean.match(/\b(\d{1,2}\s*(?:Nov|Ott|Gen|Feb|Mar|Apr|Mag|Giu|Lug|Ago|Set|Dic)[a-z]*\s*(?:•|,|-|\s)*\s*(?:ore\s*)?\d{1,2}[:.]\d{2})/i);
-    if (dateAndTime) {
-      return dateAndTime[1].replace(/\s+/g, ' ').trim();
+  function parseTimeSortKey(timeStr) {
+    return parseSingleTimePoint(timeStr, true).sortKey;
+  }
+
+  function findTimelineTrack(trackId) {
+    if (!Array.isArray(state.timelineTracks) || state.timelineTracks.length === 0) {
+      state.timelineTracks = getDefaultTimelineTracks();
     }
-    const timeOnly = clean.match(/\b(\d{1,2}[:.]\d{2})\b/);
-    if (timeOnly) {
-      return timeOnly[1].replace('.', ':');
+    return state.timelineTracks.find(t => t.id === trackId) || state.timelineTracks[0];
+  }
+
+  function addTimelineTrack(customTitle = '') {
+    if (!Array.isArray(state.timelineTracks)) {
+      state.timelineTracks = getDefaultTimelineTracks();
     }
-    if (fallbackTimestamp) {
-      const fbTime = fallbackTimestamp.match(/\b(\d{1,2}[:.]\d{2})\b/);
-      if (fbTime) return fbTime[1];
-      return fallbackTimestamp;
+    const idx = state.timelineTracks.length + 1;
+    const colorKey = TRACK_PALETTE[(idx - 1) % TRACK_PALETTE.length];
+    const newTrack = {
+      id: 'tl-track-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
+      title: customTitle.trim() || `Linea #${idx} (es. Sospettato / Alibi)`,
+      color: colorKey
+    };
+    state.timelineTracks.push(newTrack);
+    state.timelineCollapsed = false;
+    renderTimeline();
+    saveState();
+    showToast(`Nuova linea del tempo "${newTrack.title}" creata!`, 'amber');
+    return newTrack;
+  }
+
+  function deleteTimelineTrack(trackId) {
+    if (!Array.isArray(state.timelineTracks) || state.timelineTracks.length <= 1) {
+      showToast('Deve rimanere almeno una linea del tempo attiva.', 'stone');
+      return;
     }
-    return '';
+    const target = state.timelineTracks.find(t => t.id === trackId);
+    if (!target) return;
+    const eventsOnTrack = state.timelineEvents.filter(e => e.trackId === trackId);
+    if (eventsOnTrack.length > 0) {
+      if (!confirm(`La linea "${target.title}" contiene ${eventsOnTrack.length} eventi. Vuoi eliminarla e spostare gli eventi sulla linea principale?`)) {
+        return;
+      }
+      const fallbackTrack = state.timelineTracks.find(t => t.id !== trackId) || state.timelineTracks[0];
+      eventsOnTrack.forEach(e => { e.trackId = fallbackTrack.id; });
+    }
+    state.timelineTracks = state.timelineTracks.filter(t => t.id !== trackId);
+    renderTimeline();
+    saveState();
+    showToast(`Linea del tempo "${target.title}" rimossa`, 'stone');
+  }
+
+  function cycleTimelineTrackColor(trackId) {
+    const track = findTimelineTrack(trackId);
+    if (!track) return;
+    const currentIdx = TRACK_PALETTE.indexOf(track.color);
+    track.color = TRACK_PALETTE[(currentIdx + 1) % TRACK_PALETTE.length];
+    renderTimeline();
+    saveState();
+  }
+
+  function populateTimelineTrackSelect(selectedTrackId) {
+    if (!dom.tlTrackSelect) return;
+    if (!Array.isArray(state.timelineTracks) || state.timelineTracks.length === 0) {
+      state.timelineTracks = getDefaultTimelineTracks();
+    }
+    dom.tlTrackSelect.innerHTML = state.timelineTracks.map(t => {
+      const c = TIMELINE_DOT_COLORS[t.color] || TIMELINE_DOT_COLORS.amber;
+      return `<option value="${t.id}" ${t.id === selectedTrackId ? 'selected' : ''}>● ${escapeHtml(t.title)} (${c.name})</option>`;
+    }).join('');
   }
 
   function getActiveCards() {
@@ -652,8 +818,19 @@
     if (!dom.timelineNodesContainer) return;
 
     const count = state.timelineEvents.length;
+    const tracksCount = Array.isArray(state.timelineTracks) ? state.timelineTracks.length : 1;
+
     if (dom.timelineCountBadge) {
       dom.timelineCountBadge.textContent = String(count);
+    }
+
+    if (dom.timelineTracksBadge) {
+      if (tracksCount > 1) {
+        dom.timelineTracksBadge.textContent = `${tracksCount} linee (Gantt)`;
+        dom.timelineTracksBadge.classList.remove('hidden');
+      } else {
+        dom.timelineTracksBadge.classList.add('hidden');
+      }
     }
 
     if (state.timelineCollapsed) {
@@ -665,16 +842,26 @@
       if (dom.timelineChevron) dom.timelineChevron.textContent = '▴';
     }
 
-    if (count === 0) {
+    if (count === 0 && tracksCount <= 1) {
       dom.timelineNodesContainer.innerHTML = `
         <div class="flex items-center gap-3 text-[11px] text-stone-400 py-2 px-2">
           <span class="w-2.5 h-2.5 rounded-full bg-amber-500/60 inline-block"></span>
-          <span>Nessun evento sulla linea del tempo. <b>Seleziona un orario nel testo di una carta</b> e premi <b class="text-sky-300">⏱️ +Timeline</b>, clicca <b class="text-amber-300">+⏱️</b> sull'orario di una carta, o premi <b class="text-amber-300">+ Pallino</b>.</span>
+          <span>Nessun evento sulla linea del tempo. <b>Seleziona un orario nel testo di una carta</b> e premi <b class="text-sky-300">⏱️ +Timeline</b>, clicca <b class="text-amber-300">+⏱️</b> su una carta, oppure premi <b class="text-sky-300">+ Linea Parallela</b> per avviare il confronto stile Gantt.</span>
         </div>
       `;
       return;
     }
 
+    // Branch 1: Single Default Timeline (Clean, compact layout)
+    if (tracksCount <= 1) {
+      renderSingleTrackTimeline();
+    } else {
+      // Branch 2: Multi-Timeline Parallel Gantt View (Synchronized Chronological Matrix)
+      renderParallelGanttTimeline();
+    }
+  }
+
+  function renderSingleTrackTimeline() {
     const sorted = [...state.timelineEvents].sort((a, b) => parseTimeSortKey(a.time) - parseTimeSortKey(b.time));
 
     dom.timelineNodesContainer.innerHTML = `
@@ -688,16 +875,17 @@
       const cStyle = TIMELINE_DOT_COLORS[ev.color] || TIMELINE_DOT_COLORS.amber;
       const linkedCard = ev.cardId ? findCardById(ev.cardId) : null;
       const isCardSelected = ev.cardId && state.selectedCards.has(ev.cardId);
+      const displayTime = ev.endTime ? `${ev.time} → ${ev.endTime}` : ev.time;
 
       const node = document.createElement('div');
       node.className = `timeline-node shrink-0 ${isCardSelected ? 'is-highlighted' : ''}`;
-      node.title = `${ev.time} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nClicca sul pallino per modificare • Clicca sul badge carta per raggiungerla`;
+      node.title = `${displayTime} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nClicca per modificare • Clicca sul badge carta per raggiungerla`;
 
       node.innerHTML = `
         <!-- Desktop/Tablet Horizontal Node Layout (md:flex) -->
         <div class="hidden md:flex flex-col items-center w-full">
           <div class="font-mono-tech font-extrabold text-[10.5px] ${cStyle.timeText} leading-none mb-1.5 tracking-tight">
-            ${escapeHtml(ev.time)}
+            ${escapeHtml(displayTime)}
           </div>
           <div class="timeline-dot ${cStyle.dotBg}"></div>
           <div class="mt-1.5 flex flex-col items-center max-w-[155px]">
@@ -720,7 +908,7 @@
             <div class="timeline-dot shrink-0 ${cStyle.dotBg}"></div>
             <div class="min-w-0">
               <div class="font-mono-tech font-extrabold text-[11px] ${cStyle.timeText} leading-tight">
-                ${escapeHtml(ev.time)}
+                ${escapeHtml(displayTime)}
               </div>
               <div class="text-xs font-medium text-stone-200 break-words leading-snug">
                 ${escapeHtml(ev.label)}
@@ -737,31 +925,446 @@
         </div>
       `;
 
-      if (linkedCard) {
-        node.addEventListener('mouseenter', () => {
-          const domCard = document.getElementById(`card-${linkedCard.id}`);
-          if (domCard) domCard.classList.add('is-selected');
-        });
-        node.addEventListener('mouseleave', () => {
-          const domCard = document.getElementById(`card-${linkedCard.id}`);
-          if (domCard && !state.selectedCards.has(linkedCard.id)) {
-            domCard.classList.remove('is-selected');
-          }
-        });
-      }
-
-      node.querySelectorAll('[data-jump-card]').forEach(jumpBtn => {
-        jumpBtn.addEventListener('click', e => {
-          e.stopPropagation();
-          focusCardOnBoard(linkedCard.id);
-        });
-      });
-
-      node.addEventListener('click', () => {
-        openTimelineModal({ editId: ev.id });
-      });
-
+      bindTimelineNodeEvents(node, ev, linkedCard);
       dom.timelineNodesContainer.appendChild(node);
+    });
+  }
+
+  function renderParallelGanttTimeline() {
+    const isMobile = window.innerWidth < 768;
+
+    if (isMobile) {
+      renderMobileParallelTimeline();
+    } else {
+      renderDesktopGanttTimeline();
+    }
+  }
+
+  function renderDesktopGanttTimeline() {
+    // 1. Collect all unique time points from all event starts and ends
+    const pointMap = new Map();
+    state.timelineEvents.forEach(ev => {
+      const sPt = parseSingleTimePoint(ev.time, true);
+      if (!pointMap.has(sPt.key)) pointMap.set(sPt.key, sPt);
+      if (ev.endTime) {
+        const ePt = parseSingleTimePoint(ev.endTime, true);
+        if (!pointMap.has(ePt.key)) pointMap.set(ePt.key, ePt);
+      }
+    });
+
+    const sortedSlots = Array.from(pointMap.values()).sort((a, b) => a.sortKey - b.sortKey);
+
+    // If no events yet on any track, render track header rows with placeholder empty cells
+    if (sortedSlots.length === 0) {
+      dom.timelineNodesContainer.innerHTML = `
+        <div class="w-full flex flex-col gap-2 py-1">
+          <div class="text-[11px] font-mono-tech text-stone-400 flex items-center justify-between border-b border-stone-800 pb-1 px-1">
+            <span>⏱️ <b>Gantt Parallelo Attivo</b> — Aggiungi pallini o intervalli alle varie linee per sincronizzare gli orari</span>
+            <span class="text-amber-400 font-bold">${state.timelineTracks.length} linee parallele create</span>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            ${state.timelineTracks.map((tr, idx) => {
+              const c = TIMELINE_DOT_COLORS[tr.color] || TIMELINE_DOT_COLORS.amber;
+              return `
+                <div class="flex items-center gap-2 p-1.5 rounded-lg bg-stone-900/60 border border-stone-800">
+                  <button type="button" data-cycle-track-color="${tr.id}" class="w-3.5 h-3.5 rounded-full ${c.dotBg} shrink-0 cursor-pointer" title="Cambia colore"></button>
+                  <input type="text" data-track-title-input="${tr.id}" value="${escapeHtml(tr.title)}" class="bg-transparent text-xs font-bold ${c.timeText} w-48 focus:outline-none focus:bg-stone-800 rounded px-1" />
+                  <span class="text-[10px] font-mono-tech text-stone-400">Nessun evento registrato</span>
+                  <div class="ml-auto flex items-center gap-1.5">
+                    <button type="button" data-add-to-track="${tr.id}" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 font-mono-tech text-[10px] font-bold cursor-pointer">+ Evento</button>
+                    ${state.timelineTracks.length > 1 ? `<button type="button" data-delete-track="${tr.id}" class="text-stone-400 hover:text-red-400 text-xs px-1 font-bold cursor-pointer" title="Elimina linea">✕</button>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+      bindTrackControlEvents(dom.timelineNodesContainer);
+      return;
+    }
+
+    // 2. Identify Coincidences (slots where 2+ parallel tracks have events or active spans)
+    const slotCoincidences = sortedSlots.map(slot => {
+      const activeTracks = new Set();
+      state.timelineEvents.forEach(ev => {
+        const sKey = parseSingleTimePoint(ev.time, true).key;
+        const eKey = ev.endTime ? parseSingleTimePoint(ev.endTime, true).key : sKey;
+        const sSort = parseSingleTimePoint(ev.time, true).sortKey;
+        const eSort = ev.endTime ? parseSingleTimePoint(ev.endTime, true).sortKey : sSort;
+        if (slot.sortKey >= sSort && slot.sortKey <= eSort) {
+          activeTracks.add(ev.trackId || state.timelineTracks[0].id);
+        }
+      });
+      return {
+        slot,
+        activeTrackCount: activeTracks.size,
+        isCoincidence: activeTracks.size >= 2
+      };
+    });
+
+    const totalCoincidences = slotCoincidences.filter(s => s.isCoincidence).length;
+    const colWidth = Math.max(145, Math.min(185, Math.floor(820 / Math.max(1, sortedSlots.length))));
+    const trackColWidth = 195;
+    const gridTemplateCols = `${trackColWidth}px repeat(${sortedSlots.length}, minmax(${colWidth}px, 1fr))`;
+
+    // 3. Render Gantt Grid
+    const ganttEl = document.createElement('div');
+    ganttEl.className = 'gantt-container';
+
+    // Header Row (Shared Chronological Axis)
+    let headerCellsHtml = `
+      <div class="gantt-header-row py-1 px-2 flex items-center justify-between" style="grid-column: 1;">
+        <span class="text-[10px] font-mono-tech font-bold uppercase tracking-wider text-amber-400">GANTT PARALLELO</span>
+        ${totalCoincidences > 0 ? `<span class="text-[9.5px] font-mono-tech bg-red-950 text-red-200 border border-red-500/70 px-1 rounded font-bold" title="Punti orari in cui 2 o più linee si sovrappongono">⚡ ${totalCoincidences} coincidenze</span>` : ''}
+      </div>
+    `;
+
+    slotCoincidences.forEach(({ slot, isCoincidence, activeTrackCount }, idx) => {
+      headerCellsHtml += `
+        <div class="gantt-header-row py-1 px-1.5 flex flex-col items-center justify-center border-l border-stone-800 ${isCoincidence ? 'gantt-col-coincidence' : ''}" style="grid-column: ${idx + 2};">
+          <span class="font-mono-tech font-extrabold text-[11px] ${isCoincidence ? 'text-amber-300' : 'text-stone-300'} leading-tight tracking-tight">${escapeHtml(slot.label)}</span>
+          ${isCoincidence ? `<span class="mt-0.5 text-[8.5px] font-mono-tech bg-amber-500 text-stone-950 font-extrabold px-1 py-0.1 rounded shadow-xs">⚡ ${activeTrackCount} LINEE</span>` : ''}
+        </div>
+      `;
+    });
+
+    const headerRowEl = document.createElement('div');
+    headerRowEl.className = 'grid items-center';
+    headerRowEl.style.gridTemplateColumns = gridTemplateCols;
+    headerRowEl.innerHTML = headerCellsHtml;
+    ganttEl.appendChild(headerRowEl);
+
+    // Track Rows
+    state.timelineTracks.forEach(track => {
+      const c = TIMELINE_DOT_COLORS[track.color] || TIMELINE_DOT_COLORS.amber;
+      const trackEvents = state.timelineEvents.filter(e => (e.trackId || state.timelineTracks[0].id) === track.id);
+
+      const trackRowEl = document.createElement('div');
+      trackRowEl.id = `gantt-track-${track.id}`;
+      trackRowEl.dataset.ganttTrackId = track.id;
+      trackRowEl.className = 'gantt-track-row';
+      trackRowEl.style.gridTemplateColumns = gridTemplateCols;
+
+      // Sticky Left Track Control Header
+      let trackHeaderHtml = `
+        <div class="gantt-track-header py-1.5 px-2 flex items-center justify-between gap-1.5 h-full ${c.trackHeaderBg}" style="grid-column: 1;">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <button type="button" data-cycle-track-color="${track.id}" class="w-3.5 h-3.5 rounded-full ${c.dotBg} ring-1 ring-white/30 shrink-0 cursor-pointer" title="Clicca per cambiare colore linea"></button>
+            <input type="text" data-track-title-input="${track.id}" value="${escapeHtml(track.title)}"
+              class="bg-transparent text-[11px] font-bold ${c.timeText} truncate max-w-[105px] focus:outline-none focus:bg-black/40 rounded px-1" title="Clicca per rinominare la linea del tempo" />
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button type="button" data-add-to-track="${track.id}" class="px-1.5 py-0.5 rounded bg-stone-900 hover:bg-amber-500 text-amber-300 hover:text-stone-950 font-mono-tech font-bold text-[10px] border border-stone-700 cursor-pointer" title="Aggiungi evento su ${escapeHtml(track.title)}">+</button>
+            ${state.timelineTracks.length > 1 ? `
+              <button type="button" data-delete-track="${track.id}" class="text-stone-400 hover:text-red-400 text-xs px-1 font-bold cursor-pointer" title="Elimina questa linea">✕</button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+
+      // Track horizontal wire
+      trackHeaderHtml += `<div class="gantt-track-wire" style="left: ${trackColWidth}px;"></div>`;
+
+      // Column background guidelines & empty cell targets
+      slotCoincidences.forEach(({ slot, isCoincidence }, idx) => {
+        trackHeaderHtml += `
+          <div class="gantt-empty-cell border-l border-stone-800/80 ${isCoincidence ? 'gantt-col-coincidence' : ''}" style="grid-column: ${idx + 2};" data-quick-slot-time="${slot.label}" data-quick-slot-track="${track.id}">
+            <div class="gantt-col-guide ${isCoincidence ? 'is-coincidence' : ''}"></div>
+            <div class="gantt-ghost-dot px-1.5 py-0.5 rounded-full bg-stone-900 border border-amber-500/60 text-amber-300 text-[9px] font-mono-tech font-bold pointer-events-none shadow-md">
+              + ${escapeHtml(slot.label)}
+            </div>
+          </div>
+        `;
+      });
+
+      trackRowEl.innerHTML = trackHeaderHtml;
+
+      // Place Events on this Track Row
+      trackEvents.forEach(ev => {
+        const evColor = TIMELINE_DOT_COLORS[ev.color] || c;
+        const linkedCard = ev.cardId ? findCardById(ev.cardId) : null;
+        const isCardSelected = ev.cardId && state.selectedCards.has(ev.cardId);
+
+        const sKey = parseSingleTimePoint(ev.time, true).key;
+        const sIdx = sortedSlots.findIndex(s => s.key === sKey);
+        const startCol = sIdx !== -1 ? sIdx + 2 : 2;
+
+        let isSpan = false;
+        let endCol = startCol + 1;
+
+        if (ev.endTime) {
+          const eKey = parseSingleTimePoint(ev.endTime, true).key;
+          const eIdx = sortedSlots.findIndex(s => s.key === eKey);
+          if (eIdx !== -1 && eIdx > sIdx) {
+            isSpan = true;
+            endCol = eIdx + 2 + 1; // Span until end column
+          }
+        }
+
+        const evEl = document.createElement('div');
+        evEl.dataset.timelineEventId = ev.id;
+        evEl.draggable = true;
+
+        if (isSpan) {
+          // Gantt Interval Span Bar (e.g. 21:00 - 21:45)
+          evEl.className = `gantt-span-bar ${evColor.barBg} ${isCardSelected ? 'ring-2 ring-sky-400' : ''}`;
+          evEl.style.gridColumn = `${startCol} / ${endCol}`;
+          evEl.title = `${ev.time} → ${ev.endTime} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nTrascina per spostare su un'altra linea • Clicca per modificare`;
+
+          evEl.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="w-2 h-2 rounded-full ${evColor.dotBg} shrink-0"></span>
+                <span class="font-mono-tech font-extrabold text-[10px] leading-none shrink-0 tracking-tight">${escapeHtml(ev.time)} → ${escapeHtml(ev.endTime)}</span>
+                <span class="text-[10px] font-semibold truncate leading-tight">${escapeHtml(ev.label)}</span>
+              </div>
+              ${linkedCard ? `
+                <button type="button" data-jump-card="${linkedCard.id}"
+                  class="shrink-0 px-1.5 py-0.2 rounded bg-black/60 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border border-white/20 font-mono-tech font-bold text-[9px] transition cursor-pointer"
+                  title="Vai alla Carta ${escapeHtml(linkedCard.number)}">
+                  🔗 ${escapeHtml(linkedCard.number)}
+                </button>
+              ` : ''}
+            </div>
+          `;
+        } else {
+          // Point Event Node at Column
+          evEl.className = `timeline-node shrink-0 z-10 ${isCardSelected ? 'is-highlighted' : ''}`;
+          evEl.style.gridColumn = `${startCol} / ${startCol + 1}`;
+          evEl.title = `${ev.time} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nTrascina per spostare linea • Clicca per modificare`;
+
+          evEl.innerHTML = `
+            <div class="flex flex-col items-center w-full">
+              <div class="font-mono-tech font-extrabold text-[10px] ${evColor.timeText} leading-none mb-1 tracking-tight">
+                ${escapeHtml(ev.time)}
+              </div>
+              <div class="timeline-dot ${evColor.dotBg}"></div>
+              <div class="mt-1 flex flex-col items-center max-w-[135px]">
+                <span class="text-[9.5px] font-medium text-stone-200 truncate w-full text-center leading-tight">
+                  ${escapeHtml(ev.label)}
+                </span>
+                ${linkedCard ? `
+                  <button type="button" data-jump-card="${linkedCard.id}"
+                    class="mt-0.5 px-1.5 py-0.2 rounded bg-stone-900 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border ${evColor.badgeBorder} font-mono-tech font-bold text-[8.5px] transition cursor-pointer"
+                    title="Vai alla Carta ${escapeHtml(linkedCard.number)}">
+                    🔗 ${escapeHtml(linkedCard.number)}
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }
+
+        bindTimelineNodeEvents(evEl, ev, linkedCard);
+        trackRowEl.appendChild(evEl);
+      });
+
+      // Quick slot click -> prefill modal with slot time & track
+      trackRowEl.querySelectorAll('[data-quick-slot-time]').forEach(cell => {
+        cell.addEventListener('click', e => {
+          if (e.target.closest('.timeline-node, .gantt-span-bar, button, input')) return;
+          openTimelineModal({
+            prefillTime: cell.dataset.quickSlotTime,
+            prefillTrackId: cell.dataset.quickSlotTrack,
+            prefillColor: track.color
+          });
+        });
+      });
+
+      // Drag & drop event from one track to another
+      trackRowEl.addEventListener('dragover', e => {
+        e.preventDefault();
+        trackRowEl.classList.add('drop-target-active');
+      });
+      trackRowEl.addEventListener('dragleave', e => {
+        if (!trackRowEl.contains(e.relatedTarget)) {
+          trackRowEl.classList.remove('drop-target-active');
+        }
+      });
+      trackRowEl.addEventListener('drop', e => {
+        e.preventDefault();
+        trackRowEl.classList.remove('drop-target-active');
+        const evId = e.dataTransfer?.getData('application/profiler-timeline-event');
+        if (evId) {
+          const targetEvent = state.timelineEvents.find(x => x.id === evId);
+          if (targetEvent && targetEvent.trackId !== track.id) {
+            targetEvent.trackId = track.id;
+            renderTimeline();
+            saveState();
+            showToast(`Evento spostato su "${track.title}"`, 'amber');
+          }
+        }
+      });
+
+      ganttEl.appendChild(trackRowEl);
+    });
+
+    dom.timelineNodesContainer.innerHTML = '';
+    dom.timelineNodesContainer.appendChild(ganttEl);
+    bindTrackControlEvents(dom.timelineNodesContainer);
+  }
+
+  function renderMobileParallelTimeline() {
+    // Smartphone: Chronological vertical multi-track list with track chips at top
+    const sorted = [...state.timelineEvents].sort((a, b) => parseTimeSortKey(a.time) - parseTimeSortKey(b.time));
+
+    // Group by start time to clearly highlight simultaneous events across tracks
+    const timeGroups = new Map();
+    sorted.forEach(ev => {
+      const key = ev.time;
+      if (!timeGroups.has(key)) timeGroups.set(key, []);
+      timeGroups.get(key).push(ev);
+    });
+
+    let html = `
+      <!-- Mobile Track Pills Bar -->
+      <div class="w-full flex items-center gap-1.5 overflow-x-auto pb-1.5 border-b border-stone-800 no-scrollbar mb-2">
+        <span class="text-[10px] font-mono-tech text-stone-400 shrink-0 uppercase font-bold">Linee (${state.timelineTracks.length}):</span>
+        ${state.timelineTracks.map(tr => {
+          const c = TIMELINE_DOT_COLORS[tr.color] || TIMELINE_DOT_COLORS.amber;
+          const trCount = state.timelineEvents.filter(e => (e.trackId || state.timelineTracks[0].id) === tr.id).length;
+          return `
+            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-stone-900 border border-stone-700 shrink-0 text-[10px]">
+              <span class="w-2 h-2 rounded-full ${c.dotBg}"></span>
+              <span class="${c.timeText} font-bold">${escapeHtml(tr.title)}</span>
+              <span class="text-[9px] font-mono-tech text-stone-400">(${trCount})</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- Vertical Chronological Axis Container -->
+      <div class="relative w-full flex flex-col gap-2.5 pl-4">
+        <div class="absolute left-[13px] top-2 bottom-2 w-[2px] bg-gradient-to-b from-stone-700 via-amber-500/60 to-stone-700 pointer-events-none"></div>
+    `;
+
+    timeGroups.forEach((eventsAtTime, timeKey) => {
+      const distinctTracks = new Set(eventsAtTime.map(e => e.trackId || state.timelineTracks[0].id));
+      const isCoincidence = distinctTracks.size >= 2;
+
+      html += `
+        <div class="relative flex flex-col gap-1.5">
+          <div class="flex items-center gap-2">
+            <div class="timeline-dot shrink-0 ${isCoincidence ? 'bg-amber-400 ring-2 ring-red-500' : 'bg-stone-400'}"></div>
+            <span class="font-mono-tech font-extrabold text-xs ${isCoincidence ? 'text-amber-300' : 'text-stone-300'}">${escapeHtml(timeKey)}</span>
+            ${isCoincidence ? `<span class="text-[9px] font-mono-tech bg-red-950 text-red-200 border border-red-500 px-1 py-0.2 rounded font-extrabold">⚡ COMBACIA (${distinctTracks.size} Linee)</span>` : ''}
+          </div>
+          <div class="flex flex-col gap-1.5 pl-6">
+            ${eventsAtTime.map(ev => {
+              const track = findTimelineTrack(ev.trackId);
+              const c = TIMELINE_DOT_COLORS[ev.color] || TIMELINE_DOT_COLORS[track.color] || TIMELINE_DOT_COLORS.amber;
+              const linkedCard = ev.cardId ? findCardById(ev.cardId) : null;
+              const displayTime = ev.endTime ? `${ev.time} → ${ev.endTime}` : ev.time;
+
+              return `
+                <div data-timeline-event-id="${ev.id}" class="timeline-node p-2 rounded-lg bg-stone-900/80 border ${c.badgeBorder} flex items-center justify-between gap-2 cursor-pointer shadow-sm">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                      <span class="w-2 h-2 rounded-full ${c.dotBg} shrink-0"></span>
+                      <span class="text-[9.5px] font-mono-tech font-bold ${c.timeText} uppercase">${escapeHtml(track.title)}</span>
+                      ${ev.endTime ? `<span class="text-[9px] font-mono-tech text-stone-400 font-bold">(${escapeHtml(displayTime)})</span>` : ''}
+                    </div>
+                    <div class="text-xs font-semibold text-stone-100 break-words leading-tight">${escapeHtml(ev.label)}</div>
+                  </div>
+                  ${linkedCard ? `
+                    <button type="button" data-jump-card="${linkedCard.id}"
+                      class="shrink-0 px-2 py-1 rounded bg-stone-950 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border border-amber-500/40 font-mono-tech font-bold text-[10px] cursor-pointer">
+                      🔗 ${escapeHtml(linkedCard.number)}
+                    </button>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    dom.timelineNodesContainer.innerHTML = html;
+
+    dom.timelineNodesContainer.querySelectorAll('[data-timeline-event-id]').forEach(node => {
+      const evId = node.dataset.timelineEventId;
+      const ev = state.timelineEvents.find(x => x.id === evId);
+      const linkedCard = ev && ev.cardId ? findCardById(ev.cardId) : null;
+      bindTimelineNodeEvents(node, ev, linkedCard);
+    });
+  }
+
+  function bindTrackControlEvents(container) {
+    container.querySelectorAll('[data-cycle-track-color]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        cycleTimelineTrackColor(btn.dataset.cycleTrackColor);
+      });
+    });
+
+    container.querySelectorAll('[data-track-title-input]').forEach(input => {
+      input.addEventListener('click', e => e.stopPropagation());
+      input.addEventListener('input', e => {
+        const track = findTimelineTrack(input.dataset.trackTitleInput);
+        if (track) {
+          track.title = e.target.value;
+          saveState();
+        }
+      });
+    });
+
+    container.querySelectorAll('[data-add-to-track]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const tr = findTimelineTrack(btn.dataset.addToTrack);
+        openTimelineModal({
+          prefillTrackId: btn.dataset.addToTrack,
+          prefillColor: tr ? tr.color : 'amber'
+        });
+      });
+    });
+
+    container.querySelectorAll('[data-delete-track]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        deleteTimelineTrack(btn.dataset.deleteTrack);
+      });
+    });
+  }
+
+  function bindTimelineNodeEvents(node, ev, linkedCard) {
+    if (!ev) return;
+
+    if (linkedCard) {
+      node.addEventListener('mouseenter', () => {
+        const domCard = document.getElementById(`card-${linkedCard.id}`);
+        if (domCard) domCard.classList.add('is-selected');
+      });
+      node.addEventListener('mouseleave', () => {
+        const domCard = document.getElementById(`card-${linkedCard.id}`);
+        if (domCard && !state.selectedCards.has(linkedCard.id)) {
+          domCard.classList.remove('is-selected');
+        }
+      });
+    }
+
+    node.querySelectorAll('[data-jump-card]').forEach(jumpBtn => {
+      jumpBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        focusCardOnBoard(linkedCard.id);
+      });
+    });
+
+    // Drag-and-drop support to reassign event to another parallel track
+    node.addEventListener('dragstart', e => {
+      e.dataTransfer?.setData('application/profiler-timeline-event', ev.id);
+      node.classList.add('opacity-50');
+    });
+    node.addEventListener('dragend', () => {
+      node.classList.remove('opacity-50');
+    });
+
+    node.addEventListener('click', e => {
+      if (e.target.closest('button, input, select')) return;
+      openTimelineModal({ editId: ev.id });
     });
   }
 
@@ -785,18 +1388,31 @@
   }
 
   function openTimelineModal(options = {}) {
-    const { editId = null, prefillTime = '', prefillLabel = '', prefillCardId = '', prefillColor = 'amber' } = options;
+    const {
+      editId = null,
+      prefillTime = '',
+      prefillEndTime = '',
+      prefillLabel = '',
+      prefillCardId = '',
+      prefillColor = 'amber',
+      prefillTrackId = ''
+    } = options;
 
     state.editingTimelineId = editId;
     const existing = editId ? state.timelineEvents.find(x => x.id === editId) : null;
 
     const timeVal = existing ? existing.time : prefillTime;
+    const endTimeVal = existing ? (existing.endTime || '') : prefillEndTime;
     const labelVal = existing ? existing.label : prefillLabel;
     const cardIdVal = existing ? (existing.cardId || '') : prefillCardId;
     const colorVal = existing ? (existing.color || 'amber') : prefillColor;
+    const trackIdVal = existing ? (existing.trackId || state.timelineTracks[0]?.id) : (prefillTrackId || state.activeTimelineTrackId || state.timelineTracks[0]?.id);
 
     populateTimelineCardSelect(cardIdVal);
+    populateTimelineTrackSelect(trackIdVal);
+
     dom.tlTimeInput.value = timeVal;
+    if (dom.tlEndTimeInput) dom.tlEndTimeInput.value = endTimeVal;
     dom.tlLabelInput.value = labelVal;
     setTimelineColorSelection(colorVal);
 
@@ -829,12 +1445,14 @@
   }
 
   function saveTimelineModal() {
-    const timeVal = dom.tlTimeInput.value.trim();
+    const rawTime = dom.tlTimeInput.value.trim();
+    const rawEndTime = dom.tlEndTimeInput ? dom.tlEndTimeInput.value.trim() : '';
     const labelVal = dom.tlLabelInput.value.trim();
     const cardIdVal = dom.tlCardSelect.value;
+    const trackIdVal = dom.tlTrackSelect ? dom.tlTrackSelect.value : state.timelineTracks[0].id;
 
-    if (!timeVal) {
-      showToast('Inserisci un orario o una data (es. 21:51)', 'amber');
+    if (!rawTime) {
+      showToast('Inserisci un orario o una data (es. 21:15)', 'amber');
       dom.tlTimeInput.focus();
       return;
     }
@@ -844,10 +1462,14 @@
       return;
     }
 
+    const { time, endTime } = parseTimeInputAndRange(rawTime, rawEndTime);
+
     if (state.editingTimelineId) {
       const ev = state.timelineEvents.find(x => x.id === state.editingTimelineId);
       if (ev) {
-        ev.time = timeVal;
+        ev.time = time;
+        ev.endTime = endTime;
+        ev.trackId = trackIdVal;
         ev.label = labelVal;
         ev.cardId = cardIdVal || '';
         ev.color = state.editingTimelineColor;
@@ -855,18 +1477,21 @@
     } else {
       state.timelineEvents.push({
         id: 'tl-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-        time: timeVal,
+        trackId: trackIdVal,
+        time,
+        endTime,
         label: labelVal,
         cardId: cardIdVal || '',
         color: state.editingTimelineColor
       });
     }
 
+    state.activeTimelineTrackId = trackIdVal;
     state.timelineCollapsed = false;
     closeTimelineModal();
     renderTimeline();
     saveState();
-    showToast(`Evento "${timeVal} — ${labelVal}" salvato sulla Timeline`, 'amber');
+    showToast(`Evento "${time}${endTime ? ' → ' + endTime : ''}: ${labelVal}" salvato sulla Timeline`, 'amber');
   }
 
   function deleteActiveTimelineEvent() {
@@ -1564,9 +2189,10 @@
       btnTimeline.addEventListener('click', e => {
         e.stopPropagation();
         const card = findCardById(cardId);
-        const extractedTime = card ? extractTimeFromSnippet('', card.timestamp) : '';
+        const timeRange = card ? extractTimeRangeFromSnippet('', card.timestamp) : { time: '', endTime: '' };
         openTimelineModal({
-          prefillTime: extractedTime,
+          prefillTime: timeRange.time,
+          prefillEndTime: timeRange.endTime,
           prefillLabel: card ? card.title : '',
           prefillCardId: cardId,
           prefillColor: 'amber'
@@ -2254,8 +2880,10 @@
       openInspectModal(cardId);
     });
     document.getElementById('modal-btn-add-timeline').addEventListener('click', () => {
+      const timeRange = extractTimeRangeFromSnippet('', card.timestamp);
       openTimelineModal({
-        prefillTime: extractTimeFromSnippet('', card.timestamp),
+        prefillTime: timeRange.time,
+        prefillEndTime: timeRange.endTime,
         prefillLabel: card.title,
         prefillCardId: cardId,
         prefillColor: 'amber'
@@ -2933,14 +3561,15 @@
         if (!state.activeSelection) return;
         const { cardId, text } = state.activeSelection;
         const card = findCardById(cardId);
-        const extractedTime = extractTimeFromSnippet(text, card ? card.timestamp : '');
+        const timeRange = extractTimeRangeFromSnippet(text, card ? card.timestamp : '');
         const cleanLabel = text.replace(/\s+/g, ' ').slice(0, 85);
 
         window.getSelection()?.removeAllRanges();
         hideTextSelectionToolbar();
 
         openTimelineModal({
-          prefillTime: extractedTime,
+          prefillTime: timeRange.time,
+          prefillEndTime: timeRange.endTime,
           prefillLabel: cleanLabel,
           prefillCardId: cardId,
           prefillColor: 'amber'
@@ -2965,12 +3594,23 @@
     document.getElementById('btn-add-timeline-event').addEventListener('click', () => {
       const selectedCardId = state.selectedCards.size === 1 ? Array.from(state.selectedCards)[0] : '';
       const card = selectedCardId ? findCardById(selectedCardId) : null;
+      const range = card ? extractTimeRangeFromSnippet('', card.timestamp) : { time: '', endTime: '' };
       openTimelineModal({
-        prefillTime: card ? extractTimeFromSnippet('', card.timestamp) : '',
+        prefillTime: range.time,
+        prefillEndTime: range.endTime,
         prefillLabel: card ? card.title : '',
         prefillCardId: selectedCardId,
         prefillColor: 'amber'
       });
+    });
+
+    dom.btnAddTimelineTrack?.addEventListener('click', () => {
+      addTimelineTrack();
+    });
+
+    dom.btnModalAddTrack?.addEventListener('click', () => {
+      const created = addTimelineTrack();
+      populateTimelineTrackSelect(created.id);
     });
 
     dom.tlColorPicker.querySelectorAll('[data-tl-color]').forEach(btn => {
@@ -3005,6 +3645,9 @@
       if (e.key === 'Enter') saveTimelineModal();
     });
     dom.tlTimeInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveTimelineModal();
+    });
+    dom.tlEndTimeInput?.addEventListener('keydown', e => {
       if (e.key === 'Enter') saveTimelineModal();
     });
 

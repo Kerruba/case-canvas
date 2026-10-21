@@ -458,6 +458,131 @@ mark.hl-blue {
   box-shadow: 0 0 0 3px #fbbf24, 0 0 14px rgba(251, 191, 36, 0.9);
 }
 
+/* ==========================================================================
+   PARALLEL TIMELINES & GANTT SYNCHRONIZATION ENGINE
+   ========================================================================== */
+.gantt-container {
+  display: flex;
+  flex-direction: column;
+  min-width: max-content;
+  width: 100%;
+}
+
+.gantt-track-row {
+  position: relative;
+  display: grid;
+  align-items: center;
+  border-bottom: 1px solid rgba(68, 64, 60, 0.4);
+  transition: background-color 0.15s ease;
+  min-height: 60px;
+}
+
+.gantt-track-row:last-child {
+  border-bottom: none;
+}
+
+.gantt-track-row.drop-target-active {
+  background-color: rgba(56, 189, 248, 0.12) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(56, 189, 248, 0.6);
+}
+
+.gantt-track-header {
+  position: sticky;
+  left: 0;
+  z-index: 25;
+  background-color: rgba(12, 10, 9, 0.96);
+  backdrop-filter: blur(8px);
+  border-right: 1.5px solid rgba(87, 83, 78, 0.7);
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
+}
+
+.gantt-header-row {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: rgba(12, 10, 9, 0.98);
+  backdrop-filter: blur(8px);
+  border-bottom: 2px solid rgba(87, 83, 78, 0.85);
+}
+
+/* Vertical Chronological Guideline aligning timestamps across tracks */
+.gantt-col-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  background: linear-gradient(180deg, rgba(120, 113, 108, 0.25) 0%, rgba(120, 113, 108, 0.12) 100%);
+  pointer-events: none;
+}
+
+/* Highlight column where 2+ parallel timelines have events/coincidences */
+.gantt-col-coincidence {
+  background-color: rgba(245, 158, 11, 0.07);
+}
+
+.gantt-col-guide.is-coincidence {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.7) 0%, rgba(239, 68, 68, 0.5) 100%);
+  width: 1.5px;
+}
+
+/* Horizontal Track Wire */
+.gantt-track-wire {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background-color: rgba(87, 83, 78, 0.45);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Gantt Span Bar (for intervals e.g. 21:00 - 21:45) */
+.gantt-span-bar {
+  position: relative;
+  z-index: 15;
+  border-radius: 6px;
+  padding: 4px 8px;
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  cursor: pointer;
+  margin: 3px 6px;
+}
+
+.gantt-span-bar:hover {
+  transform: translateY(-1.5px);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.8),
+    0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+/* Empty Cell Ghost Dot for quick event placement on hover */
+.gantt-empty-cell {
+  position: relative;
+  height: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.gantt-empty-cell .gantt-ghost-dot {
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 12;
+}
+
+.gantt-empty-cell:hover .gantt-ghost-dot {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
 @keyframes cardTimelinePulse {
   0%, 100% {
     box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.9), 0 0 30px rgba(251, 191, 36, 0.75);
