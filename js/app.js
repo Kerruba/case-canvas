@@ -1731,6 +1731,7 @@
 
   function hideTextSelectionToolbar() {
     state.activeSelection = null;
+    state.isInteractingWithToolbar = false;
     if (dom.textSelectionToolbar) {
       dom.textSelectionToolbar.classList.add('hidden');
     }
@@ -3514,52 +3515,141 @@
     // Close Card Group Popover on outside click
     document.getElementById('btn-close-group-popover')?.addEventListener('click', closeCardGroupPopover);
 
-    // 1. Text Selection Listener for Highlighting / Copy / Send to Post-it / Send to Timeline
-    document.addEventListener('mouseup', e => {
-      if (dom.textSelectionToolbar && dom.textSelectionToolbar.contains(e.target)) {
+    // 1. Text Selection Context Toolbar (Mobile & Desktop)
+    let selectionDebounceTimer = null;
+
+    function getEvidenceBoxFromSelection(sel) {
+      if (!sel || sel.rangeCount === 0) return null;
+      const getContainer = node => {
+        if (!node) return null;
+        const el = node.nodeType === 3 ? node.parentElement : node;
+        return el ? el.closest('[data-evidence-card-id]') : null;
+      };
+      return getContainer(sel.anchorNode) || getContainer(sel.focusNode);
+    }
+
+    function updateTextSelectionToolbar() {
+      if (state.isInteractingWithToolbar) return;
+
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) {
+        hideTextSelectionToolbar();
         return;
       }
 
-      setTimeout(() => {
-        const sel = window.getSelection();
-        if (!sel || sel.isCollapsed) {
-          hideTextSelectionToolbar();
-          return;
+      const text = sel.toString().trim();
+      if (!text || text.length < 2) {
+        hideTextSelectionToolbar();
+        return;
+      }
+
+      const evidenceBox = getEvidenceBoxFromSelection(sel);
+      if (!evidenceBox) {
+        hideTextSelectionToolbar();
+        return;
+      }
+
+      const cardId = evidenceBox.dataset.evidenceCardId;
+      if (!cardId) {
+        hideTextSelectionToolbar();
+        return;
+      }
+
+      const range = sel.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) {
+        hideTextSelectionToolbar();
+        return;
+      }
+
+      state.activeSelection = { cardId, text };
+
+      if (!dom.textSelectionToolbar) return;
+
+      const isMobile = window.innerWidth < 640;
+      if (isMobile) {
+        // On mobile, dock toolbar gracefully at bottom with touch-friendly layout
+        dom.textSelectionToolbar.style.left = '50%';
+        dom.textSelectionToolbar.style.top = 'auto';
+        dom.textSelectionToolbar.style.bottom = '16px';
+        dom.textSelectionToolbar.style.transform = 'translateX(-50%)';
+        dom.textSelectionToolbar.style.marginTop = '0';
+      } else {
+        // On desktop, position floating near the selection
+        const halfWidth = 230;
+        const left = Math.min(window.innerWidth - halfWidth - 16, Math.max(halfWidth + 16, rect.left + rect.width / 2));
+        const spaceAbove = rect.top;
+
+        if (spaceAbove < 80) {
+          // If selection is near sticky topbar, display below selection
+          dom.textSelectionToolbar.style.left = `${left}px`;
+          dom.textSelectionToolbar.style.top = `${rect.bottom + 12}px`;
+          dom.textSelectionToolbar.style.bottom = 'auto';
+          dom.textSelectionToolbar.style.transform = 'translateX(-50%)';
+          dom.textSelectionToolbar.style.marginTop = '0';
+        } else {
+          // Normal position above selection
+          dom.textSelectionToolbar.style.left = `${left}px`;
+          dom.textSelectionToolbar.style.top = `${rect.top}px`;
+          dom.textSelectionToolbar.style.bottom = 'auto';
+          dom.textSelectionToolbar.style.transform = 'translate(-50%, -100%)';
+          dom.textSelectionToolbar.style.marginTop = '-10px';
         }
+      }
 
-        const text = sel.toString().trim();
-        if (!text || text.length < 2) {
-          hideTextSelectionToolbar();
-          return;
-        }
+      dom.textSelectionToolbar.classList.remove('hidden');
+    }
 
-        const anchorNode = sel.anchorNode;
-        const parentEl = anchorNode?.nodeType === 3 ? anchorNode.parentElement : anchorNode;
-        const evidenceBox = parentEl ? parentEl.closest('[data-evidence-card-id]') : null;
+    function scheduleSelectionCheck(delay = 25) {
+      clearTimeout(selectionDebounceTimer);
+      selectionDebounceTimer = setTimeout(updateTextSelectionToolbar, delay);
+    }
 
-        if (!evidenceBox) {
-          hideTextSelectionToolbar();
-          return;
-        }
+    // Support mouse, touch and selection change events
+    document.addEventListener('mouseup', e => {
+      if (dom.textSelectionToolbar && dom.textSelectionToolbar.contains(e.target)) return;
+      scheduleSelectionCheck(20);
+    });
 
-        const cardId = evidenceBox.dataset.evidenceCardId;
-        const range = sel.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
+    document.addEventListener('touchend', e => {
+      if (dom.textSelectionToolbar && dom.textSelectionToolbar.contains(e.target)) return;
+      scheduleSelectionCheck(80);
+    });
 
-        state.activeSelection = { cardId, text };
-        const left = Math.min(window.innerWidth - 220, Math.max(220, rect.left + rect.width / 2));
-        const top = Math.max(58, rect.top);
+    document.addEventListener('selectionchange', () => {
+      if (state.isInteractingWithToolbar) return;
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) {
+        scheduleSelectionCheck(50);
+      } else {
+        scheduleSelectionCheck(120);
+      }
+    });
 
-        dom.textSelectionToolbar.style.left = `${left}px`;
-        dom.textSelectionToolbar.style.top = `${top}px`;
-        dom.textSelectionToolbar.classList.remove('hidden');
-      }, 15);
+    window.addEventListener('resize', () => {
+      if (state.activeSelection && dom.textSelectionToolbar && !dom.textSelectionToolbar.classList.contains('hidden')) {
+        updateTextSelectionToolbar();
+      }
     });
 
     if (dom.textSelectionToolbar) {
+      // Prevent selection collapse on desktop mousedown
       dom.textSelectionToolbar.addEventListener('mousedown', e => {
         e.preventDefault();
         e.stopPropagation();
+      });
+
+      // Track touch/pointer interactions to prevent selection collapse while tapping buttons
+      const markInteraction = () => {
+        state.isInteractingWithToolbar = true;
+      };
+      dom.textSelectionToolbar.addEventListener('pointerdown', markInteraction);
+      dom.textSelectionToolbar.addEventListener('touchstart', markInteraction, { passive: true });
+
+      document.addEventListener('pointerdown', e => {
+        if (dom.textSelectionToolbar && !dom.textSelectionToolbar.contains(e.target)) {
+          state.isInteractingWithToolbar = false;
+        }
       });
 
       dom.textSelectionToolbar.querySelectorAll('[data-hl-color]').forEach(btn => {
@@ -3568,7 +3658,15 @@
           if (state.activeSelection) {
             addHighlightToCard(state.activeSelection.cardId, state.activeSelection.text, btn.dataset.hlColor);
           }
+          state.isInteractingWithToolbar = false;
         });
+      });
+
+      document.getElementById('btn-sel-close')?.addEventListener('click', e => {
+        e.stopPropagation();
+        window.getSelection()?.removeAllRanges();
+        hideTextSelectionToolbar();
+        state.isInteractingWithToolbar = false;
       });
 
       document.getElementById('btn-sel-copy').addEventListener('click', async e => {
@@ -3583,6 +3681,7 @@
           showToast('Testo copiato negli appunti!', 'amber');
         }
         hideTextSelectionToolbar();
+        state.isInteractingWithToolbar = false;
       });
 
       document.getElementById('btn-sel-to-card')?.addEventListener('click', e => {
@@ -3590,6 +3689,7 @@
         if (!state.activeSelection) return;
         const { cardId, text } = state.activeSelection;
         createCustomCardFromSnippet(cardId, text);
+        state.isInteractingWithToolbar = false;
       });
 
       document.getElementById('btn-sel-to-note').addEventListener('click', e => {
@@ -3610,6 +3710,7 @@
           saveState();
           showToast('Frammento aggiunto al Post-it della carta!', 'amber');
         }
+        state.isInteractingWithToolbar = false;
       });
 
       document.getElementById('btn-sel-to-timeline').addEventListener('click', e => {
@@ -3630,6 +3731,7 @@
           prefillCardId: cardId,
           prefillColor: 'amber'
         });
+        state.isInteractingWithToolbar = false;
       });
 
       document.getElementById('btn-sel-clear-hl').addEventListener('click', e => {
@@ -3637,6 +3739,7 @@
         if (state.activeSelection) {
           clearCardHighlights(state.activeSelection.cardId);
         }
+        state.isInteractingWithToolbar = false;
       });
     }
 

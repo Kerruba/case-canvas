@@ -113,6 +113,7 @@ body {
 .selectable-evidence-text {
   user-select: text !important;
   -webkit-user-select: text !important;
+  -webkit-touch-callout: default !important;
   cursor: text;
 }
 
@@ -392,13 +393,11 @@ mark.hl-blue {
   display: none;
 }
 
-/* Floating Text Selection Highlighter & Copy Popup */
+/* Floating Text Selection Highlighter & Copy Popup (Mobile & Desktop) */
 #text-selection-toolbar {
   position: fixed;
   z-index: 99999;
-  transform: translate(-50%, -100%);
-  margin-top: -10px;
-  transition: opacity 0.12s ease;
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
 
 /* ==========================================================================
