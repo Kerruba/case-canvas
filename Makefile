@@ -25,6 +25,8 @@ check:
 	@node --check js/svg-illustrations.js
 	@python3 -m json.tool scenario.json > /dev/null
 	@python3 -m json.tool scenario-valenti.json > /dev/null
+	@python3 -m json.tool scenario-fenice.json > /dev/null
+	@python3 -m json.tool scenario-abbazia.json > /dev/null
 	@echo "✅ Sintassi JS e JSON verificata con successo."
 
 ## Mostra i comandi disponibili

@@ -31,6 +31,11 @@
       badgeBg: 'bg-amber-800 text-amber-50 border-amber-600',
       headerAccent: 'border-l-4 border-l-amber-700',
       icon: 'map-pin'
+    },
+    'Estratto / Nota': {
+      badgeBg: 'bg-purple-800 text-purple-50 border-purple-500',
+      headerAccent: 'border-l-4 border-l-purple-600',
+      icon: 'file-text'
     }
   };
 
@@ -87,26 +92,58 @@
 
   const TIMELINE_DOT_COLORS = {
     amber: {
+      name: 'Ambra',
       dotBg: 'bg-amber-400',
       timeText: 'text-amber-300',
-      badgeBorder: 'border-amber-500/50'
+      badgeBorder: 'border-amber-500/50',
+      barBg: 'bg-amber-950/85 border border-amber-500/70 text-amber-100',
+      trackHeaderBg: 'bg-amber-950/40 border-amber-500/30 text-amber-300'
     },
     red: {
+      name: 'Cremisi',
       dotBg: 'bg-red-500',
       timeText: 'text-red-400',
-      badgeBorder: 'border-red-500/50'
+      badgeBorder: 'border-red-500/50',
+      barBg: 'bg-red-950/85 border border-red-500/70 text-red-100',
+      trackHeaderBg: 'bg-red-950/40 border-red-500/30 text-red-300'
     },
     blue: {
+      name: 'Blu Polizia',
       dotBg: 'bg-sky-400',
       timeText: 'text-sky-300',
-      badgeBorder: 'border-sky-500/50'
+      badgeBorder: 'border-sky-500/50',
+      barBg: 'bg-sky-950/85 border border-sky-500/70 text-sky-100',
+      trackHeaderBg: 'bg-sky-950/40 border-sky-500/30 text-sky-300'
     },
     green: {
+      name: 'Smeraldo',
       dotBg: 'bg-emerald-400',
       timeText: 'text-emerald-300',
-      badgeBorder: 'border-emerald-500/50'
+      badgeBorder: 'border-emerald-500/50',
+      barBg: 'bg-emerald-950/85 border border-emerald-500/70 text-emerald-100',
+      trackHeaderBg: 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+    },
+    purple: {
+      name: 'Viola',
+      dotBg: 'bg-purple-400',
+      timeText: 'text-purple-300',
+      badgeBorder: 'border-purple-500/50',
+      barBg: 'bg-purple-950/85 border border-purple-500/70 text-purple-100',
+      trackHeaderBg: 'bg-purple-950/40 border-purple-500/30 text-purple-300'
     }
   };
+
+  const TRACK_PALETTE = ['amber', 'blue', 'red', 'green', 'purple'];
+
+  function getDefaultTimelineTracks() {
+    return [
+      {
+        id: 'tl-track-main',
+        title: 'Linea Principale',
+        color: 'amber'
+      }
+    ];
+  }
 
   const THEME_KEYS = Object.keys(GROUP_THEMES);
 
@@ -116,10 +153,14 @@
     scenario: null,
     drawnCount: 0,
     cardsState: {},     // cardId -> { x, y, note, important, archived, collapsed, highlights: [{text, color}], zIndex }
+    customCards: [],    // [{ id, number, title, category, timestamp, rawText, sourceCardId, sourceCardNumber, isCustom: true }]
     groups: [],         // [{ id, title, x, y, width, height, theme }]
     connections: [],    // [{ id, from, to, label }]
-    timelineEvents: [], // [{ id, time, label, cardId, color }]
+    timelineTracks: getDefaultTimelineTracks(), // [{ id, title, color }]
+    timelineEvents: [], // [{ id, trackId, time, endTime, label, cardId, color }]
+    timelineViewMode: 'auto', // 'auto' (Gantt if multi-track or has intervals) | 'gantt' | 'classic'
     timelineCollapsed: false,
+    activeTimelineTrackId: 'tl-track-main',
     panX: 60,
     panY: 135,
     scale: 1,
@@ -134,6 +175,7 @@
     inspectedCardId: null,
     editingStringId: null,
     editingTimelineId: null,
+    editingTimelineTrackId: 'tl-track-main',
     editingTimelineColor: 'amber',
     groupPopoverCardId: null,
     activeSelection: null, // { cardId, text }
@@ -168,7 +210,11 @@
     dom.timelineContentArea = document.getElementById('timeline-content-area');
     dom.timelineNodesContainer = document.getElementById('timeline-nodes-container');
     dom.timelineCountBadge = document.getElementById('timeline-count-badge');
+    dom.timelineTracksBadge = document.getElementById('timeline-tracks-badge');
     dom.timelineChevron = document.getElementById('timeline-chevron');
+    dom.btnAddTimelineTrack = document.getElementById('btn-add-timeline-track');
+    dom.btnToggleTimelineView = document.getElementById('btn-toggle-timeline-view');
+    dom.timelineViewLabel = document.getElementById('timeline-view-label');
 
     // Bottom-right Deck Widget
     dom.deckCountText = document.getElementById('deck-count-text');
@@ -204,7 +250,11 @@
 
     // Timeline Modal
     dom.timelineModal = document.getElementById('timeline-modal');
+    dom.tlTrackRow = document.getElementById('tl-track-row');
+    dom.tlTrackSelect = document.getElementById('tl-track-select');
+    dom.btnModalAddTrack = document.getElementById('btn-modal-add-track');
     dom.tlTimeInput = document.getElementById('tl-time-input');
+    dom.tlEndTimeInput = document.getElementById('tl-endtime-input');
     dom.tlLabelInput = document.getElementById('tl-label-input');
     dom.tlCardSelect = document.getElementById('tl-card-select');
     dom.tlColorPicker = document.getElementById('tl-color-picker');
@@ -221,7 +271,11 @@
     cacheDom();
     bindGlobalEvents();
 
-    const lastScenarioId = localStorage.getItem(STORAGE_PREFIX + 'active_scenario') || 'caso-409-morosini';
+    let lastScenarioId = localStorage.getItem(STORAGE_PREFIX + 'active_scenario') || 'caso-904-abbazia';
+    if (!localStorage.getItem(STORAGE_PREFIX + 'introduced_904')) {
+      localStorage.setItem(STORAGE_PREFIX + 'introduced_904', '1');
+      lastScenarioId = 'caso-904-abbazia';
+    }
     await loadScenarioById(lastScenarioId);
   }
 
@@ -262,10 +316,21 @@
         const parsed = JSON.parse(savedRaw);
         state.drawnCount = parsed.drawnCount ?? 1;
         state.cardsState = parsed.cardsState || {};
+        state.customCards = Array.isArray(parsed.customCards) ? parsed.customCards : [];
         state.groups = parsed.groups || getDefaultGroups();
         state.connections = parsed.connections || [];
-        state.timelineEvents = parsed.timelineEvents || [];
+        state.timelineTracks = Array.isArray(parsed.timelineTracks) && parsed.timelineTracks.length > 0
+          ? parsed.timelineTracks
+          : getDefaultTimelineTracks();
+        state.timelineEvents = Array.isArray(parsed.timelineEvents) ? parsed.timelineEvents : [];
+        const validTrackIds = new Set(state.timelineTracks.map(t => t.id));
+        state.timelineEvents.forEach(ev => {
+          if (!ev.trackId || !validTrackIds.has(ev.trackId)) {
+            ev.trackId = state.timelineTracks[0].id;
+          }
+        });
         state.timelineCollapsed = Boolean(parsed.timelineCollapsed);
+        state.timelineViewMode = parsed.timelineViewMode || 'auto';
         state.panX = parsed.panX ?? 50;
         state.panY = parsed.panY ?? 20;
         state.scale = parsed.scale ?? 1.0;
@@ -343,9 +408,12 @@
   function resetBoardStateToDefaults() {
     state.drawnCount = 0;
     state.cardsState = {};
+    state.customCards = [];
     state.groups = getDefaultGroups();
     state.connections = [];
+    state.timelineTracks = getDefaultTimelineTracks();
     state.timelineEvents = [];
+    state.timelineViewMode = 'auto';
     state.timelineCollapsed = window.innerWidth < 640;
     state.panX = window.innerWidth < 640 ? 16 : 50;
     state.panY = 20;
@@ -370,9 +438,12 @@
     const payload = {
       drawnCount: state.drawnCount,
       cardsState: state.cardsState,
+      customCards: state.customCards,
       groups: state.groups,
       connections: state.connections,
+      timelineTracks: state.timelineTracks,
       timelineEvents: state.timelineEvents,
+      timelineViewMode: state.timelineViewMode,
       timelineCollapsed: state.timelineCollapsed,
       panX: state.panX,
       panY: state.panY,
@@ -414,34 +485,17 @@
   }
 
   function updateWorldTransform() {
-    dom.world.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.scale})`;
-    const gridPx = Math.max(10, 24 * state.scale);
-    dom.viewport.style.backgroundPosition = `0 0, ${state.panX}px ${state.panY}px`;
-    dom.viewport.style.backgroundSize = `100% 100%, ${gridPx}px ${gridPx}px`;
-    if (dom.zoomLevelText) {
-      dom.zoomLevelText.textContent = `${Math.round(state.scale * 100)}%`;
-    }
+    // No 2D transform needed in Structured Grid mode
   }
 
-  function zoomAtPoint(newScale, clientX, clientY) {
-    const clamped = Math.min(2.2, Math.max(0.35, newScale));
-    const rect = dom.viewport ? dom.viewport.getBoundingClientRect() : { left: 0, top: 0 };
-    const worldBefore = screenToWorld(clientX, clientY);
-    state.scale = clamped;
-    state.panX = (clientX - rect.left) - worldBefore.x * state.scale;
-    state.panY = (clientY - rect.top) - worldBefore.y * state.scale;
-    updateWorldTransform();
-    hideTextSelectionToolbar();
-    closeCardGroupPopover();
-    saveState();
+  function zoomAtPoint() {
+    // No zoom needed in Structured Grid mode
   }
 
   function centerViewOnBoard() {
-    state.scale = getResponsiveDefaultScale();
-    state.panX = window.innerWidth < 640 ? 16 : 50;
-    state.panY = 20;
-    updateWorldTransform();
-    saveState();
+    if (dom.viewport) {
+      dom.viewport.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   function focusCardOnBoard(cardId) {
@@ -451,28 +505,17 @@
       return;
     }
 
-    const dims = getCardDimensions(cs);
-    const cardCenterX = cs.x + dims.width / 2;
-    const cardCenterY = cs.y + dims.height / 2;
-    const rect = dom.viewport ? dom.viewport.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight };
-
-    state.panX = Math.round(rect.width / 2 - cardCenterX * state.scale);
-    state.panY = Math.round(rect.height / 2 - cardCenterY * state.scale);
-
     state.selectedCards.clear();
     state.selectedCards.add(cardId);
-    state.maxZIndex += 1;
-    cs.zIndex = state.maxZIndex;
 
-    updateWorldTransform();
     renderCards();
-    renderStrings();
     renderTimeline();
     updateMultiSelectToolbar();
     saveState();
 
     const domCard = document.getElementById(`card-${cardId}`);
     if (domCard) {
+      domCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
       domCard.classList.add('timeline-pulse');
       setTimeout(() => domCard.classList.remove('timeline-pulse'), 1900);
     }
@@ -492,12 +535,66 @@
   }
 
   // =========================================================================
-  // TOP TIMELINE BAR & CHRONOLOGICAL ENGINE
+  // TOP TIMELINE BAR, PARALLEL TRACKS & GANTT CHRONOLOGICAL ENGINE
   // =========================================================================
 
-  function parseTimeSortKey(timeStr) {
+  function parseTimeInputAndRange(rawStart, rawEnd = '') {
+    const s = (rawStart || '').trim();
+    let e = (rawEnd || '').trim();
+    if (!e && s) {
+      // Check if user wrote a range like "21:00 - 21:45" or "dalle 21:00 alle 21:45"
+      const rangeMatch = s.match(/(?:dalle?\s+)?(\d{1,2}[:.]\d{2})\s*(?:-|–|—|alle?|a|to)\s*(\d{1,2}[:.]\d{2})/i);
+      if (rangeMatch) {
+        return {
+          time: rangeMatch[1].replace('.', ':'),
+          endTime: rangeMatch[2].replace('.', ':')
+        };
+      }
+    }
+    return {
+      time: s,
+      endTime: e
+    };
+  }
+
+  function extractTimeRangeFromSnippet(text, fallbackTimestamp) {
+    const clean = (text || '').trim();
+    const rangeMatch = clean.match(/(?:dalle?\s+)?(\d{1,2}[:.]\d{2})\s*(?:-|–|—|alle?|a)\s*(\d{1,2}[:.]\d{2})/i);
+    if (rangeMatch) {
+      return {
+        time: rangeMatch[1].replace('.', ':'),
+        endTime: rangeMatch[2].replace('.', ':')
+      };
+    }
+    const dateAndTime = clean.match(/\b(\d{1,2}\s*(?:Nov|Ott|Gen|Feb|Mar|Apr|Mag|Giu|Lug|Ago|Set|Dic)[a-z]*\s*(?:•|,|-|\s)*\s*(?:ore\s*)?\d{1,2}[:.]\d{2})/i);
+    if (dateAndTime) {
+      return { time: dateAndTime[1].replace(/\s+/g, ' ').trim(), endTime: '' };
+    }
+    const timeOnly = clean.match(/\b(\d{1,2}[:.]\d{2})\b/);
+    if (timeOnly) {
+      return { time: timeOnly[1].replace('.', ':'), endTime: '' };
+    }
+    if (fallbackTimestamp) {
+      const fbRange = fallbackTimestamp.match(/(?:dalle?\s+)?(\d{1,2}[:.]\d{2})\s*(?:-|–|—|alle?|a)\s*(\d{1,2}[:.]\d{2})/i);
+      if (fbRange) {
+        return { time: fbRange[1].replace('.', ':'), endTime: fbRange[2].replace('.', ':') };
+      }
+      const fbTime = fallbackTimestamp.match(/\b(\d{1,2}[:.]\d{2})\b/);
+      if (fbTime) {
+        return { time: fbTime[1].replace('.', ':'), endTime: '' };
+      }
+      return { time: fallbackTimestamp, endTime: '' };
+    }
+    return { time: '', endTime: '' };
+  }
+
+  function extractTimeFromSnippet(text, fallbackTimestamp) {
+    return extractTimeRangeFromSnippet(text, fallbackTimestamp).time;
+  }
+
+  function parseSingleTimePoint(timeStr, hasEveningEvents = true) {
     const raw = (timeStr || '').trim();
-    if (!raw) return 999999;
+    if (!raw) return { key: '99:99', label: '—', sortKey: 999999 };
 
     let dayOffset = 0;
     const dayMatch = raw.match(/\b(\d{1,2})\s*(?:Nov|Ott|Gen|Feb|Mar|Apr|Mag|Giu|Lug|Ago|Set|Dic)/i);
@@ -506,42 +603,286 @@
     }
 
     const timeMatch = raw.match(/(\d{1,2})[:.](\d{2})/);
-    if (!timeMatch) return dayOffset || 500000;
+    if (!timeMatch) {
+      return { key: raw, label: raw, sortKey: dayOffset || 500000 };
+    }
 
     let hours = parseInt(timeMatch[1], 10);
     const mins = parseInt(timeMatch[2], 10);
+    const canonicalKey = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 
-    if (!dayMatch && hours < 8) {
+    if (!dayMatch && hasEveningEvents && hours < 8) {
       hours += 24;
     }
 
-    return dayOffset + hours * 60 + mins;
+    return {
+      key: canonicalKey,
+      label: canonicalKey,
+      sortKey: dayOffset + hours * 60 + mins
+    };
   }
 
-  function extractTimeFromSnippet(text, fallbackTimestamp) {
-    const clean = (text || '').trim();
-    const dateAndTime = clean.match(/\b(\d{1,2}\s*(?:Nov|Ott|Gen|Feb|Mar|Apr|Mag|Giu|Lug|Ago|Set|Dic)[a-z]*\s*(?:•|,|-|\s)*\s*(?:ore\s*)?\d{1,2}[:.]\d{2})/i);
-    if (dateAndTime) {
-      return dateAndTime[1].replace(/\s+/g, ' ').trim();
+  function parseTimeSortKey(timeStr) {
+    return parseSingleTimePoint(timeStr, true).sortKey;
+  }
+
+  function findTimelineTrack(trackId) {
+    if (!Array.isArray(state.timelineTracks) || state.timelineTracks.length === 0) {
+      state.timelineTracks = getDefaultTimelineTracks();
     }
-    const timeOnly = clean.match(/\b(\d{1,2}[:.]\d{2})\b/);
-    if (timeOnly) {
-      return timeOnly[1].replace('.', ':');
+    return state.timelineTracks.find(t => t.id === trackId) || state.timelineTracks[0];
+  }
+
+  function addTimelineTrack(customTitle = '') {
+    if (!Array.isArray(state.timelineTracks)) {
+      state.timelineTracks = getDefaultTimelineTracks();
     }
-    if (fallbackTimestamp) {
-      const fbTime = fallbackTimestamp.match(/\b(\d{1,2}[:.]\d{2})\b/);
-      if (fbTime) return fbTime[1];
-      return fallbackTimestamp;
+    const idx = state.timelineTracks.length + 1;
+    const colorKey = TRACK_PALETTE[(idx - 1) % TRACK_PALETTE.length];
+    const newTrack = {
+      id: 'tl-track-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
+      title: customTitle.trim() || `Linea #${idx} (es. Sospettato / Alibi)`,
+      color: colorKey
+    };
+    state.timelineTracks.push(newTrack);
+    state.timelineCollapsed = false;
+    renderTimeline();
+    saveState();
+    showToast(`Nuova linea del tempo "${newTrack.title}" creata!`, 'amber');
+    return newTrack;
+  }
+
+  function deleteTimelineTrack(trackId) {
+    if (!Array.isArray(state.timelineTracks) || state.timelineTracks.length <= 1) {
+      showToast('Deve rimanere almeno una linea del tempo attiva.', 'stone');
+      return;
     }
-    return '';
+    const target = state.timelineTracks.find(t => t.id === trackId);
+    if (!target) return;
+    const eventsOnTrack = state.timelineEvents.filter(e => e.trackId === trackId);
+    if (eventsOnTrack.length > 0) {
+      if (!confirm(`La linea "${target.title}" contiene ${eventsOnTrack.length} eventi. Vuoi eliminarla e spostare gli eventi sulla linea principale?`)) {
+        return;
+      }
+      const fallbackTrack = state.timelineTracks.find(t => t.id !== trackId) || state.timelineTracks[0];
+      eventsOnTrack.forEach(e => { e.trackId = fallbackTrack.id; });
+    }
+    state.timelineTracks = state.timelineTracks.filter(t => t.id !== trackId);
+    renderTimeline();
+    saveState();
+    showToast(`Linea del tempo "${target.title}" rimossa`, 'stone');
+  }
+
+  function cycleTimelineTrackColor(trackId) {
+    const track = findTimelineTrack(trackId);
+    if (!track) return;
+    const currentIdx = TRACK_PALETTE.indexOf(track.color);
+    track.color = TRACK_PALETTE[(currentIdx + 1) % TRACK_PALETTE.length];
+    renderTimeline();
+    saveState();
+  }
+
+  function populateTimelineTrackSelect(selectedTrackId) {
+    if (!dom.tlTrackSelect) return;
+    if (!Array.isArray(state.timelineTracks) || state.timelineTracks.length === 0) {
+      state.timelineTracks = getDefaultTimelineTracks();
+    }
+    dom.tlTrackSelect.innerHTML = state.timelineTracks.map(t => {
+      const c = TIMELINE_DOT_COLORS[t.color] || TIMELINE_DOT_COLORS.amber;
+      return `<option value="${t.id}" ${t.id === selectedTrackId ? 'selected' : ''}>● ${escapeHtml(t.title)} (${c.name})</option>`;
+    }).join('');
+  }
+
+  function getActiveCards() {
+    const drawnScenarioCards = state.scenario ? state.scenario.cards.slice(0, state.drawnCount) : [];
+    const custom = Array.isArray(state.customCards) ? state.customCards : [];
+    return [...drawnScenarioCards, ...custom];
+  }
+
+  function findCardById(cardId) {
+    if (!cardId) return null;
+    if (state.scenario && Array.isArray(state.scenario.cards)) {
+      const found = state.scenario.cards.find(c => c.id === cardId);
+      if (found) return found;
+    }
+    if (Array.isArray(state.customCards)) {
+      const foundCustom = state.customCards.find(c => c.id === cardId);
+      if (foundCustom) return foundCustom;
+    }
+    return null;
+  }
+
+  /**
+   * Creates a standalone Custom Card / Dedicated Note on the board from a selected text snippet
+   * (or from scratch when sourceCardId is null).
+   */
+  function createCustomCardFromSnippet(sourceCardId, rawSnippet, customTitle = '') {
+    if (!Array.isArray(state.customCards)) {
+      state.customCards = [];
+    }
+    const sourceCard = sourceCardId ? findCardById(sourceCardId) : null;
+    const cleanText = (rawSnippet || '').trim();
+
+    // Compute sequential note number (#N1, #N2, ...)
+    const nextIdx = state.customCards.length + 1;
+    const noteNumber = `#N${nextIdx}`;
+
+    // Determine an intelligent default title
+    let derivedTitle = customTitle.trim();
+    if (!derivedTitle) {
+      if (/quesiti|domand/i.test(cleanText)) {
+        derivedTitle = sourceCard
+          ? `Quesiti della Procura (da ${sourceCard.number})`
+          : 'Quesiti della Procura';
+      } else if (cleanText) {
+        const firstLine = cleanText.split('\n')[0].replace(/^[•\-*\s]+/, '').trim();
+        const shortSnippet = firstLine.length > 44 ? firstLine.slice(0, 44) + '…' : firstLine;
+        derivedTitle = sourceCard
+          ? `Estratto ${sourceCard.number}: ${shortSnippet}`
+          : shortSnippet;
+      } else {
+        derivedTitle = `Nota Investigativa ${noteNumber}`;
+      }
+    }
+
+    const newCardId = 'note-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    const parentGroupId = (sourceCardId && state.cardsState[sourceCardId]?.groupId)
+      ? state.cardsState[sourceCardId].groupId
+      : null;
+
+    const customCardObj = {
+      id: newCardId,
+      number: noteNumber,
+      title: derivedTitle,
+      category: 'Estratto / Nota',
+      timestamp: sourceCard ? `Estratto da ${sourceCard.number}` : 'Nota dedicata',
+      rawText: cleanText || 'Scrivi qui il testo della nota dedicata...',
+      sourceCardId: sourceCard ? sourceCard.id : null,
+      sourceCardNumber: sourceCard ? sourceCard.number : null,
+      isCustom: true
+    };
+
+    state.customCards.push(customCardObj);
+    state.maxZIndex += 1;
+    state.cardsState[newCardId] = {
+      groupId: parentGroupId,
+      note: '',
+      important: /quesiti/i.test(cleanText),
+      archived: false,
+      collapsed: false,
+      highlights: [],
+      zIndex: state.maxZIndex,
+      justDrawn: true
+    };
+
+    state.selectedCards.clear();
+    state.selectedCards.add(newCardId);
+
+    window.getSelection()?.removeAllRanges();
+    hideTextSelectionToolbar();
+    renderAll();
+    saveState();
+
+    setTimeout(() => {
+      const domCard = document.getElementById(`card-${newCardId}`);
+      if (domCard) {
+        domCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 40);
+
+    showToast(
+      sourceCard
+        ? `✂️ Creata carta dedicata ${noteNumber} ("${derivedTitle}") estratta da ${sourceCard.number}!`
+        : `📝 Creata nuova carta nota ${noteNumber} sulla lavagna!`,
+      'amber'
+    );
+
+    return customCardObj;
+  }
+
+  function deleteCustomCard(cardId) {
+    if (!Array.isArray(state.customCards)) return;
+    const target = state.customCards.find(c => c.id === cardId);
+    if (!target) return;
+
+    state.customCards = state.customCards.filter(c => c.id !== cardId);
+    delete state.cardsState[cardId];
+    state.selectedCards.delete(cardId);
+    state.connections = state.connections.filter(c => c.from !== cardId && c.to !== cardId);
+
+    if (state.inspectedCardId === cardId) {
+      dom.inspectModal.classList.add('hidden');
+      state.inspectedCardId = null;
+    }
+
+    renderAll();
+    saveState();
+    showToast(`Carta nota ${target.number} eliminata dalla lavagna`, 'stone');
+  }
+
+  function formatTimeDuration(startTime, endTime) {
+    if (!startTime || !endTime) return '';
+    const s = parseSingleTimePoint(startTime, true).sortKey;
+    const e = parseSingleTimePoint(endTime, true).sortKey;
+    if (e <= s) return '';
+    const diffMins = e - s;
+    const h = Math.floor(diffMins / 60);
+    const m = diffMins % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
   }
 
   function renderTimeline() {
     if (!dom.timelineNodesContainer) return;
 
     const count = state.timelineEvents.length;
+    const tracksCount = Array.isArray(state.timelineTracks) ? state.timelineTracks.length : 1;
+    const hasIntervals = state.timelineEvents.some(e => e.endTime && e.endTime.trim().length > 0);
+
     if (dom.timelineCountBadge) {
       dom.timelineCountBadge.textContent = String(count);
+    }
+
+    let isGanttMode = false;
+    if (state.timelineViewMode === 'gantt') {
+      isGanttMode = true;
+    } else if (state.timelineViewMode === 'classic') {
+      isGanttMode = false;
+    } else {
+      // 'auto' mode: Gantt if multi-track OR if any event has an interval!
+      isGanttMode = tracksCount > 1 || hasIntervals;
+    }
+
+    if (dom.timelineViewLabel) {
+      dom.timelineViewLabel.textContent = isGanttMode ? 'Gantt' : 'Punti';
+      dom.timelineViewLabel.className = isGanttMode ? 'font-bold text-amber-400' : 'font-bold text-stone-200';
+    }
+
+    if (dom.btnToggleTimelineView) {
+      if (isGanttMode) {
+        // Current view is Gantt -> clicking switches to Punti
+        dom.btnToggleTimelineView.innerHTML = `<span>⏱️ Passa a Punti</span>`;
+        dom.btnToggleTimelineView.className = 'px-2 py-1 bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white border border-stone-700 rounded text-[11px] font-mono-tech font-semibold transition flex items-center gap-1 cursor-pointer shrink-0';
+        dom.btnToggleTimelineView.title = 'Attualmente in visualizzazione Gantt. Clicca per passare alla visualizzazione classica a punti.';
+      } else {
+        // Current view is Punti -> clicking switches to Gantt
+        dom.btnToggleTimelineView.innerHTML = `<span>📊 Passa a Gantt</span>`;
+        dom.btnToggleTimelineView.className = 'px-2 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/50 rounded text-[11px] font-mono-tech font-bold transition flex items-center gap-1 cursor-pointer shrink-0';
+        dom.btnToggleTimelineView.title = 'Attualmente in visualizzazione punti. Clicca per passare alla visualizzazione Gantt con barre d\'intervallo.';
+      }
+    }
+
+    if (dom.timelineTracksBadge) {
+      if (tracksCount > 1) {
+        dom.timelineTracksBadge.textContent = `${tracksCount} linee (Gantt)`;
+        dom.timelineTracksBadge.classList.remove('hidden');
+      } else if (hasIntervals || isGanttMode) {
+        dom.timelineTracksBadge.textContent = `1 linea (Gantt)`;
+        dom.timelineTracksBadge.classList.remove('hidden');
+      } else {
+        dom.timelineTracksBadge.classList.add('hidden');
+      }
     }
 
     if (state.timelineCollapsed) {
@@ -553,85 +894,539 @@
       if (dom.timelineChevron) dom.timelineChevron.textContent = '▴';
     }
 
-    if (count === 0) {
+    if (count === 0 && tracksCount <= 1) {
       dom.timelineNodesContainer.innerHTML = `
         <div class="flex items-center gap-3 text-[11px] text-stone-400 py-2 px-2">
           <span class="w-2.5 h-2.5 rounded-full bg-amber-500/60 inline-block"></span>
-          <span>Nessun evento sulla linea del tempo. <b>Seleziona un orario nel testo di una carta</b> e premi <b class="text-sky-300">⏱️ +Timeline</b>, clicca <b class="text-amber-300">+⏱️</b> sull'orario di una carta, o premi <b class="text-amber-300">+ Pallino</b>.</span>
+          <span>Nessun evento sulla linea del tempo. <b>Seleziona un orario nel testo di una carta</b> e premi <b class="text-sky-300">⏱️ +Timeline</b>, clicca <b class="text-amber-300">+⏱️</b> su una carta, oppure premi <b class="text-sky-300">+ Linea Parallela</b> per avviare il confronto stile Gantt.</span>
         </div>
       `;
       return;
     }
 
+    if (isGanttMode) {
+      renderParallelGanttTimeline();
+    } else {
+      renderSingleTrackTimeline();
+    }
+  }
+
+  function renderSingleTrackTimeline() {
     const sorted = [...state.timelineEvents].sort((a, b) => parseTimeSortKey(a.time) - parseTimeSortKey(b.time));
 
     dom.timelineNodesContainer.innerHTML = `
-      <!-- Horizontal Axis Line behind dots -->
-      <div class="absolute left-6 right-6 top-[29px] h-[2px] bg-gradient-to-r from-stone-700 via-amber-500/50 to-stone-700 pointer-events-none"></div>
+      <!-- Horizontal Axis Line behind dots (Tablet & Desktop >= 768px) -->
+      <div class="hidden md:block absolute left-6 right-6 top-[29px] h-[2px] bg-gradient-to-r from-stone-700 via-amber-500/50 to-stone-700 pointer-events-none"></div>
+      <!-- Vertical Axis Line behind dots (Smartphone < 768px) -->
+      <div class="md:hidden absolute left-[18px] top-3 bottom-3 w-[2px] bg-gradient-to-b from-stone-700 via-amber-500/60 to-stone-700 pointer-events-none"></div>
     `;
 
     sorted.forEach(ev => {
       const cStyle = TIMELINE_DOT_COLORS[ev.color] || TIMELINE_DOT_COLORS.amber;
-      const linkedCard = (ev.cardId && state.scenario)
-        ? state.scenario.cards.find(c => c.id === ev.cardId)
-        : null;
+      const linkedCard = ev.cardId ? findCardById(ev.cardId) : null;
       const isCardSelected = ev.cardId && state.selectedCards.has(ev.cardId);
+      const dur = ev.endTime ? formatTimeDuration(ev.time, ev.endTime) : '';
+      const displayTime = ev.endTime ? `${ev.time} → ${ev.endTime}` : ev.time;
 
       const node = document.createElement('div');
       node.className = `timeline-node shrink-0 ${isCardSelected ? 'is-highlighted' : ''}`;
-      node.title = `${ev.time} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nClicca sul pallino per modificare • Clicca sul badge carta per centrarla`;
+      node.title = `${displayTime}${dur ? ' (' + dur + ')' : ''} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nClicca per modificare • Clicca sul badge carta per raggiungerla`;
 
       node.innerHTML = `
-        <div class="font-mono-tech font-extrabold text-[10.5px] ${cStyle.timeText} leading-none mb-1.5 tracking-tight">
-          ${escapeHtml(ev.time)}
+        <!-- Desktop/Tablet Horizontal Node Layout (md:flex) -->
+        <div class="hidden md:flex flex-col items-center w-full">
+          <div class="font-mono-tech font-extrabold text-[10.5px] ${cStyle.timeText} leading-none mb-1.5 tracking-tight flex items-center gap-1">
+            <span>${escapeHtml(displayTime)}</span>
+            ${dur ? `<span class="text-[8.5px] bg-stone-900 border border-stone-700 text-amber-300 px-1 rounded font-normal">⏱️ ${dur}</span>` : ''}
+          </div>
+          <div class="timeline-dot ${cStyle.dotBg}"></div>
+          <div class="mt-1.5 flex flex-col items-center max-w-[155px]">
+            <span class="text-[10px] font-medium text-stone-200 truncate w-full text-center leading-tight">
+              ${escapeHtml(ev.label)}
+            </span>
+            ${linkedCard ? `
+              <button type="button" data-jump-card="${linkedCard.id}"
+                class="mt-0.5 px-1.5 py-0.2 rounded bg-stone-900 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border ${cStyle.badgeBorder} font-mono-tech font-bold text-[9px] transition cursor-pointer"
+                title="Clicca per andare alla Carta ${escapeHtml(linkedCard.number)}">
+                🔗 ${escapeHtml(linkedCard.number)}
+              </button>
+            ` : ''}
+          </div>
         </div>
-        <div class="timeline-dot ${cStyle.dotBg}"></div>
-        <div class="mt-1.5 flex flex-col items-center max-w-[155px]">
-          <span class="text-[10px] font-medium text-stone-200 truncate w-full text-center leading-tight">
-            ${escapeHtml(ev.label)}
-          </span>
+
+        <!-- Smartphone Vertical Node Layout (< 768px) -->
+        <div class="flex md:hidden items-center justify-between gap-2.5 w-full pl-1">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="timeline-dot shrink-0 ${cStyle.dotBg}"></div>
+            <div class="min-w-0">
+              <div class="font-mono-tech font-extrabold text-[11px] ${cStyle.timeText} leading-tight flex items-center gap-1">
+                <span>${escapeHtml(displayTime)}</span>
+                ${dur ? `<span class="text-[9px] bg-stone-900 border border-stone-700 text-amber-300 px-1 rounded font-normal">⏱️ ${dur}</span>` : ''}
+              </div>
+              <div class="text-xs font-medium text-stone-200 break-words leading-snug">
+                ${escapeHtml(ev.label)}
+              </div>
+            </div>
+          </div>
           ${linkedCard ? `
             <button type="button" data-jump-card="${linkedCard.id}"
-              class="mt-0.5 px-1.5 py-0.2 rounded bg-stone-900 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border ${cStyle.badgeBorder} font-mono-tech font-bold text-[9px] transition cursor-pointer"
-              title="Clicca per centrare la Carta ${escapeHtml(linkedCard.number)} sulla lavagna">
+              class="shrink-0 px-2 py-1 rounded bg-stone-900 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border ${cStyle.badgeBorder} font-mono-tech font-bold text-[10px] transition cursor-pointer"
+              title="Clicca per andare alla Carta ${escapeHtml(linkedCard.number)}">
               🔗 ${escapeHtml(linkedCard.number)}
             </button>
           ` : ''}
         </div>
       `;
 
-      if (linkedCard) {
-        node.addEventListener('mouseenter', () => {
-          const domCard = document.getElementById(`card-${linkedCard.id}`);
-          if (domCard) domCard.classList.add('is-selected');
-        });
-        node.addEventListener('mouseleave', () => {
-          const domCard = document.getElementById(`card-${linkedCard.id}`);
-          if (domCard && !state.selectedCards.has(linkedCard.id)) {
-            domCard.classList.remove('is-selected');
-          }
-        });
-      }
+      bindTimelineNodeEvents(node, ev, linkedCard);
+      dom.timelineNodesContainer.appendChild(node);
+    });
+  }
 
-      const jumpBtn = node.querySelector('[data-jump-card]');
-      if (jumpBtn) {
-        jumpBtn.addEventListener('click', e => {
-          e.stopPropagation();
-          focusCardOnBoard(linkedCard.id);
-        });
-      }
+  function renderParallelGanttTimeline() {
+    const isMobile = window.innerWidth < 768;
 
-      node.addEventListener('click', () => {
-        openTimelineModal({ editId: ev.id });
+    if (isMobile) {
+      renderMobileParallelTimeline();
+    } else {
+      renderDesktopGanttTimeline();
+    }
+  }
+
+  function renderDesktopGanttTimeline() {
+    // 1. Collect all unique time points from all event starts and ends
+    const pointMap = new Map();
+    state.timelineEvents.forEach(ev => {
+      const sPt = parseSingleTimePoint(ev.time, true);
+      if (!pointMap.has(sPt.key)) pointMap.set(sPt.key, sPt);
+      if (ev.endTime) {
+        const ePt = parseSingleTimePoint(ev.endTime, true);
+        if (!pointMap.has(ePt.key)) pointMap.set(ePt.key, ePt);
+      }
+    });
+
+    const sortedSlots = Array.from(pointMap.values()).sort((a, b) => a.sortKey - b.sortKey);
+
+    // If no events yet on any track, render track header rows with placeholder empty cells
+    if (sortedSlots.length === 0) {
+      dom.timelineNodesContainer.innerHTML = `
+        <div class="w-full flex flex-col gap-2 py-1">
+          <div class="text-[11px] font-mono-tech text-stone-400 flex items-center justify-between border-b border-stone-800 pb-1 px-1">
+            <span>⏱️ <b>Gantt Parallelo Attivo</b> — Aggiungi pallini o intervalli alle varie linee per sincronizzare gli orari</span>
+            <span class="text-amber-400 font-bold">${state.timelineTracks.length} linee parallele create</span>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            ${state.timelineTracks.map((tr, idx) => {
+              const c = TIMELINE_DOT_COLORS[tr.color] || TIMELINE_DOT_COLORS.amber;
+              return `
+                <div class="flex items-center gap-2 p-1.5 rounded-lg bg-stone-900/60 border border-stone-800">
+                  <button type="button" data-cycle-track-color="${tr.id}" class="w-3.5 h-3.5 rounded-full ${c.dotBg} shrink-0 cursor-pointer" title="Cambia colore"></button>
+                  <input type="text" data-track-title-input="${tr.id}" value="${escapeHtml(tr.title)}" class="bg-transparent text-xs font-bold ${c.timeText} w-48 focus:outline-none focus:bg-stone-800 rounded px-1" />
+                  <span class="text-[10px] font-mono-tech text-stone-400">Nessun evento registrato</span>
+                  <div class="ml-auto flex items-center gap-1.5">
+                    <button type="button" data-add-to-track="${tr.id}" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 font-mono-tech text-[10px] font-bold cursor-pointer">+ Evento</button>
+                    ${state.timelineTracks.length > 1 ? `<button type="button" data-delete-track="${tr.id}" class="text-stone-400 hover:text-red-400 text-xs px-1 font-bold cursor-pointer" title="Elimina linea">✕</button>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+      bindTrackControlEvents(dom.timelineNodesContainer);
+      return;
+    }
+
+    // 2. Identify Coincidences (slots where 2+ parallel tracks have events or active spans)
+    const slotCoincidences = sortedSlots.map(slot => {
+      const activeTracks = new Set();
+      state.timelineEvents.forEach(ev => {
+        const sKey = parseSingleTimePoint(ev.time, true).key;
+        const eKey = ev.endTime ? parseSingleTimePoint(ev.endTime, true).key : sKey;
+        const sSort = parseSingleTimePoint(ev.time, true).sortKey;
+        const eSort = ev.endTime ? parseSingleTimePoint(ev.endTime, true).sortKey : sSort;
+        if (slot.sortKey >= sSort && slot.sortKey <= eSort) {
+          activeTracks.add(ev.trackId || state.timelineTracks[0].id);
+        }
+      });
+      return {
+        slot,
+        activeTrackCount: activeTracks.size,
+        isCoincidence: activeTracks.size >= 2
+      };
+    });
+
+    const totalCoincidences = slotCoincidences.filter(s => s.isCoincidence).length;
+    const trackColWidth = 195;
+    const fullAvailable = dom.timelineContentArea ? Math.max(900, dom.timelineContentArea.clientWidth - trackColWidth - 40) : 1000;
+    const colWidth = Math.max(145, Math.min(220, Math.floor(fullAvailable / Math.max(1, sortedSlots.length))));
+    const gridTemplateCols = `${trackColWidth}px repeat(${sortedSlots.length}, minmax(${colWidth}px, 1fr))`;
+
+    // 3. Render Gantt Grid
+    const ganttEl = document.createElement('div');
+    ganttEl.className = 'gantt-container';
+
+    // Header Row (Shared Chronological Axis)
+    let headerCellsHtml = `
+      <div class="gantt-header-row py-1 px-2 flex items-center justify-between" style="grid-column: 1;">
+        <span class="text-[10px] font-mono-tech font-bold uppercase tracking-wider text-amber-400">GANTT PARALLELO</span>
+        ${totalCoincidences > 0 ? `<span class="text-[9.5px] font-mono-tech bg-red-950 text-red-200 border border-red-500/70 px-1 rounded font-bold" title="Punti orari in cui 2 o più linee si sovrappongono">⚡ ${totalCoincidences} coincidenze</span>` : ''}
+      </div>
+    `;
+
+    slotCoincidences.forEach(({ slot, isCoincidence, activeTrackCount }, idx) => {
+      headerCellsHtml += `
+        <div class="gantt-header-row py-1 px-1.5 flex flex-col items-center justify-center border-l border-stone-800 ${isCoincidence ? 'gantt-col-coincidence' : ''}" style="grid-column: ${idx + 2};">
+          <span class="font-mono-tech font-extrabold text-[11px] ${isCoincidence ? 'text-amber-300' : 'text-stone-300'} leading-tight tracking-tight">${escapeHtml(slot.label)}</span>
+          ${isCoincidence ? `<span class="mt-0.5 text-[8.5px] font-mono-tech bg-amber-500 text-stone-950 font-extrabold px-1 py-0.1 rounded shadow-xs">⚡ ${activeTrackCount} LINEE</span>` : ''}
+        </div>
+      `;
+    });
+
+    const headerRowEl = document.createElement('div');
+    headerRowEl.className = 'grid items-center';
+    headerRowEl.style.gridTemplateColumns = gridTemplateCols;
+    headerRowEl.innerHTML = headerCellsHtml;
+    ganttEl.appendChild(headerRowEl);
+
+    // Track Rows
+    state.timelineTracks.forEach(track => {
+      const c = TIMELINE_DOT_COLORS[track.color] || TIMELINE_DOT_COLORS.amber;
+      const trackEvents = state.timelineEvents.filter(e => (e.trackId || state.timelineTracks[0].id) === track.id);
+
+      const trackRowEl = document.createElement('div');
+      trackRowEl.id = `gantt-track-${track.id}`;
+      trackRowEl.dataset.ganttTrackId = track.id;
+      trackRowEl.className = 'gantt-track-row';
+      trackRowEl.style.gridTemplateColumns = gridTemplateCols;
+
+      // Sticky Left Track Control Header
+      let trackHeaderHtml = `
+        <div class="gantt-track-header py-1.5 px-2 flex items-center justify-between gap-1.5 h-full ${c.trackHeaderBg}" style="grid-column: 1;">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <button type="button" data-cycle-track-color="${track.id}" class="w-3.5 h-3.5 rounded-full ${c.dotBg} ring-1 ring-white/30 shrink-0 cursor-pointer" title="Clicca per cambiare colore linea"></button>
+            <input type="text" data-track-title-input="${track.id}" value="${escapeHtml(track.title)}"
+              class="bg-transparent text-[11px] font-bold ${c.timeText} truncate max-w-[105px] focus:outline-none focus:bg-black/40 rounded px-1" title="Clicca per rinominare la linea del tempo" />
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button type="button" data-add-to-track="${track.id}" class="px-1.5 py-0.5 rounded bg-stone-900 hover:bg-amber-500 text-amber-300 hover:text-stone-950 font-mono-tech font-bold text-[10px] border border-stone-700 cursor-pointer" title="Aggiungi evento su ${escapeHtml(track.title)}">+</button>
+            ${state.timelineTracks.length > 1 ? `
+              <button type="button" data-delete-track="${track.id}" class="text-stone-400 hover:text-red-400 text-xs px-1 font-bold cursor-pointer" title="Elimina questa linea">✕</button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+
+      // Track horizontal wire
+      trackHeaderHtml += `<div class="gantt-track-wire" style="left: ${trackColWidth}px;"></div>`;
+
+      // Column background guidelines & empty cell targets
+      slotCoincidences.forEach(({ slot, isCoincidence }, idx) => {
+        trackHeaderHtml += `
+          <div class="gantt-empty-cell border-l border-stone-800/80 ${isCoincidence ? 'gantt-col-coincidence' : ''}" style="grid-column: ${idx + 2};" data-quick-slot-time="${slot.label}" data-quick-slot-track="${track.id}">
+            <div class="gantt-col-guide ${isCoincidence ? 'is-coincidence' : ''}"></div>
+            <div class="gantt-ghost-dot px-1.5 py-0.5 rounded-full bg-stone-900 border border-amber-500/60 text-amber-300 text-[9px] font-mono-tech font-bold pointer-events-none shadow-md">
+              + ${escapeHtml(slot.label)}
+            </div>
+          </div>
+        `;
       });
 
-      dom.timelineNodesContainer.appendChild(node);
+      trackRowEl.innerHTML = trackHeaderHtml;
+
+      // Place Events on this Track Row
+      trackEvents.forEach(ev => {
+        const evColor = TIMELINE_DOT_COLORS[ev.color] || c;
+        const linkedCard = ev.cardId ? findCardById(ev.cardId) : null;
+        const isCardSelected = ev.cardId && state.selectedCards.has(ev.cardId);
+
+        const sKey = parseSingleTimePoint(ev.time, true).key;
+        const sIdx = sortedSlots.findIndex(s => s.key === sKey);
+        const startCol = sIdx !== -1 ? sIdx + 2 : 2;
+
+        let isSpan = false;
+        let endCol = startCol + 1;
+
+        if (ev.endTime) {
+          const eKey = parseSingleTimePoint(ev.endTime, true).key;
+          const eIdx = sortedSlots.findIndex(s => s.key === eKey);
+          if (eIdx !== -1 && eIdx > sIdx) {
+            isSpan = true;
+            endCol = eIdx + 2 + 1; // Span until end column
+          }
+        }
+
+        const evEl = document.createElement('div');
+        evEl.dataset.timelineEventId = ev.id;
+        evEl.draggable = true;
+
+        if (isSpan) {
+          // Gantt Interval Span Bar (e.g. 21:00 - 21:45)
+          const dur = formatTimeDuration(ev.time, ev.endTime);
+          evEl.className = `gantt-span-bar ${evColor.barBg} ${isCardSelected ? 'ring-2 ring-sky-400' : ''}`;
+          evEl.style.gridColumn = `${startCol} / ${endCol}`;
+          evEl.title = `${ev.time} → ${ev.endTime}${dur ? ' (' + dur + ')' : ''} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nTrascina per spostare su un'altra linea • Clicca per modificare`;
+
+          evEl.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="w-2 h-2 rounded-full ${evColor.dotBg} shrink-0"></span>
+                <span class="font-mono-tech font-extrabold text-[10px] leading-none shrink-0 tracking-tight">${escapeHtml(ev.time)} → ${escapeHtml(ev.endTime)}</span>
+                ${dur ? `<span class="px-1.5 py-0.2 rounded bg-black/50 text-[8.5px] font-mono-tech font-bold text-amber-300 border border-white/10 shrink-0">⏱️ ${dur}</span>` : ''}
+                <span class="text-[10px] font-semibold truncate leading-tight">${escapeHtml(ev.label)}</span>
+              </div>
+              ${linkedCard ? `
+                <button type="button" data-jump-card="${linkedCard.id}"
+                  class="shrink-0 px-1.5 py-0.2 rounded bg-black/60 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border border-white/20 font-mono-tech font-bold text-[9px] transition cursor-pointer"
+                  title="Vai alla Carta ${escapeHtml(linkedCard.number)}">
+                  🔗 ${escapeHtml(linkedCard.number)}
+                </button>
+              ` : ''}
+            </div>
+          `;
+        } else {
+          // Point Event Node at Column
+          evEl.className = `timeline-node shrink-0 z-10 ${isCardSelected ? 'is-highlighted' : ''}`;
+          evEl.style.gridColumn = `${startCol} / ${startCol + 1}`;
+          evEl.title = `${ev.time} — ${ev.label}${linkedCard ? ` (Carta ${linkedCard.number}: ${linkedCard.title})` : ''}\nTrascina per spostare linea • Clicca per modificare`;
+
+          evEl.innerHTML = `
+            <div class="flex flex-col items-center w-full">
+              <div class="font-mono-tech font-extrabold text-[10px] ${evColor.timeText} leading-none mb-1 tracking-tight">
+                ${escapeHtml(ev.time)}
+              </div>
+              <div class="timeline-dot ${evColor.dotBg}"></div>
+              <div class="mt-1 flex flex-col items-center max-w-[135px]">
+                <span class="text-[9.5px] font-medium text-stone-200 truncate w-full text-center leading-tight">
+                  ${escapeHtml(ev.label)}
+                </span>
+                ${linkedCard ? `
+                  <button type="button" data-jump-card="${linkedCard.id}"
+                    class="mt-0.5 px-1.5 py-0.2 rounded bg-stone-900 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border ${evColor.badgeBorder} font-mono-tech font-bold text-[8.5px] transition cursor-pointer"
+                    title="Vai alla Carta ${escapeHtml(linkedCard.number)}">
+                    🔗 ${escapeHtml(linkedCard.number)}
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }
+
+        bindTimelineNodeEvents(evEl, ev, linkedCard);
+        trackRowEl.appendChild(evEl);
+      });
+
+      // Quick slot click -> prefill modal with slot time & track
+      trackRowEl.querySelectorAll('[data-quick-slot-time]').forEach(cell => {
+        cell.addEventListener('click', e => {
+          if (e.target.closest('.timeline-node, .gantt-span-bar, button, input')) return;
+          openTimelineModal({
+            prefillTime: cell.dataset.quickSlotTime,
+            prefillTrackId: cell.dataset.quickSlotTrack,
+            prefillColor: track.color
+          });
+        });
+      });
+
+      // Drag & drop event from one track to another
+      trackRowEl.addEventListener('dragover', e => {
+        e.preventDefault();
+        trackRowEl.classList.add('drop-target-active');
+      });
+      trackRowEl.addEventListener('dragleave', e => {
+        if (!trackRowEl.contains(e.relatedTarget)) {
+          trackRowEl.classList.remove('drop-target-active');
+        }
+      });
+      trackRowEl.addEventListener('drop', e => {
+        e.preventDefault();
+        trackRowEl.classList.remove('drop-target-active');
+        const evId = e.dataTransfer?.getData('application/profiler-timeline-event');
+        if (evId) {
+          const targetEvent = state.timelineEvents.find(x => x.id === evId);
+          if (targetEvent && targetEvent.trackId !== track.id) {
+            targetEvent.trackId = track.id;
+            renderTimeline();
+            saveState();
+            showToast(`Evento spostato su "${track.title}"`, 'amber');
+          }
+        }
+      });
+
+      ganttEl.appendChild(trackRowEl);
+    });
+
+    dom.timelineNodesContainer.innerHTML = '';
+    dom.timelineNodesContainer.appendChild(ganttEl);
+    bindTrackControlEvents(dom.timelineNodesContainer);
+  }
+
+  function renderMobileParallelTimeline() {
+    // Smartphone: Chronological vertical multi-track list with track chips at top
+    const sorted = [...state.timelineEvents].sort((a, b) => parseTimeSortKey(a.time) - parseTimeSortKey(b.time));
+
+    // Group by start time to clearly highlight simultaneous events across tracks
+    const timeGroups = new Map();
+    sorted.forEach(ev => {
+      const key = ev.time;
+      if (!timeGroups.has(key)) timeGroups.set(key, []);
+      timeGroups.get(key).push(ev);
+    });
+
+    let html = `
+      <!-- Mobile Track Pills Bar -->
+      <div class="w-full flex items-center gap-1.5 overflow-x-auto pb-1.5 border-b border-stone-800 no-scrollbar mb-2">
+        <span class="text-[10px] font-mono-tech text-stone-400 shrink-0 uppercase font-bold">Linee (${state.timelineTracks.length}):</span>
+        ${state.timelineTracks.map(tr => {
+          const c = TIMELINE_DOT_COLORS[tr.color] || TIMELINE_DOT_COLORS.amber;
+          const trCount = state.timelineEvents.filter(e => (e.trackId || state.timelineTracks[0].id) === tr.id).length;
+          return `
+            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-stone-900 border border-stone-700 shrink-0 text-[10px]">
+              <span class="w-2 h-2 rounded-full ${c.dotBg}"></span>
+              <span class="${c.timeText} font-bold">${escapeHtml(tr.title)}</span>
+              <span class="text-[9px] font-mono-tech text-stone-400">(${trCount})</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- Vertical Chronological Axis Container -->
+      <div class="relative w-full flex flex-col gap-2.5 pl-4">
+        <div class="absolute left-[13px] top-2 bottom-2 w-[2px] bg-gradient-to-b from-stone-700 via-amber-500/60 to-stone-700 pointer-events-none"></div>
+    `;
+
+    timeGroups.forEach((eventsAtTime, timeKey) => {
+      const distinctTracks = new Set(eventsAtTime.map(e => e.trackId || state.timelineTracks[0].id));
+      const isCoincidence = distinctTracks.size >= 2;
+
+      html += `
+        <div class="relative flex flex-col gap-1.5">
+          <div class="flex items-center gap-2">
+            <div class="timeline-dot shrink-0 ${isCoincidence ? 'bg-amber-400 ring-2 ring-red-500' : 'bg-stone-400'}"></div>
+            <span class="font-mono-tech font-extrabold text-xs ${isCoincidence ? 'text-amber-300' : 'text-stone-300'}">${escapeHtml(timeKey)}</span>
+            ${isCoincidence ? `<span class="text-[9px] font-mono-tech bg-red-950 text-red-200 border border-red-500 px-1 py-0.2 rounded font-extrabold">⚡ COMBACIA (${distinctTracks.size} Linee)</span>` : ''}
+          </div>
+          <div class="flex flex-col gap-1.5 pl-6">
+            ${eventsAtTime.map(ev => {
+              const track = findTimelineTrack(ev.trackId);
+              const c = TIMELINE_DOT_COLORS[ev.color] || TIMELINE_DOT_COLORS[track.color] || TIMELINE_DOT_COLORS.amber;
+              const linkedCard = ev.cardId ? findCardById(ev.cardId) : null;
+              const displayTime = ev.endTime ? `${ev.time} → ${ev.endTime}` : ev.time;
+
+              return `
+                <div data-timeline-event-id="${ev.id}" class="timeline-node p-2 rounded-lg bg-stone-900/80 border ${c.badgeBorder} flex items-center justify-between gap-2 cursor-pointer shadow-sm">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                      <span class="w-2 h-2 rounded-full ${c.dotBg} shrink-0"></span>
+                      <span class="text-[9.5px] font-mono-tech font-bold ${c.timeText} uppercase">${escapeHtml(track.title)}</span>
+                      ${ev.endTime ? `<span class="text-[9px] font-mono-tech text-stone-400 font-bold">(${escapeHtml(displayTime)})</span>` : ''}
+                    </div>
+                    <div class="text-xs font-semibold text-stone-100 break-words leading-tight">${escapeHtml(ev.label)}</div>
+                  </div>
+                  ${linkedCard ? `
+                    <button type="button" data-jump-card="${linkedCard.id}"
+                      class="shrink-0 px-2 py-1 rounded bg-stone-950 hover:bg-amber-500 text-amber-300 hover:text-stone-950 border border-amber-500/40 font-mono-tech font-bold text-[10px] cursor-pointer">
+                      🔗 ${escapeHtml(linkedCard.number)}
+                    </button>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    dom.timelineNodesContainer.innerHTML = html;
+
+    dom.timelineNodesContainer.querySelectorAll('[data-timeline-event-id]').forEach(node => {
+      const evId = node.dataset.timelineEventId;
+      const ev = state.timelineEvents.find(x => x.id === evId);
+      const linkedCard = ev && ev.cardId ? findCardById(ev.cardId) : null;
+      bindTimelineNodeEvents(node, ev, linkedCard);
+    });
+  }
+
+  function bindTrackControlEvents(container) {
+    container.querySelectorAll('[data-cycle-track-color]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        cycleTimelineTrackColor(btn.dataset.cycleTrackColor);
+      });
+    });
+
+    container.querySelectorAll('[data-track-title-input]').forEach(input => {
+      input.addEventListener('click', e => e.stopPropagation());
+      input.addEventListener('input', e => {
+        const track = findTimelineTrack(input.dataset.trackTitleInput);
+        if (track) {
+          track.title = e.target.value;
+          saveState();
+        }
+      });
+    });
+
+    container.querySelectorAll('[data-add-to-track]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const tr = findTimelineTrack(btn.dataset.addToTrack);
+        openTimelineModal({
+          prefillTrackId: btn.dataset.addToTrack,
+          prefillColor: tr ? tr.color : 'amber'
+        });
+      });
+    });
+
+    container.querySelectorAll('[data-delete-track]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        deleteTimelineTrack(btn.dataset.deleteTrack);
+      });
+    });
+  }
+
+  function bindTimelineNodeEvents(node, ev, linkedCard) {
+    if (!ev) return;
+
+    if (linkedCard) {
+      node.addEventListener('mouseenter', () => {
+        const domCard = document.getElementById(`card-${linkedCard.id}`);
+        if (domCard) domCard.classList.add('is-selected');
+      });
+      node.addEventListener('mouseleave', () => {
+        const domCard = document.getElementById(`card-${linkedCard.id}`);
+        if (domCard && !state.selectedCards.has(linkedCard.id)) {
+          domCard.classList.remove('is-selected');
+        }
+      });
+    }
+
+    node.querySelectorAll('[data-jump-card]').forEach(jumpBtn => {
+      jumpBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        focusCardOnBoard(linkedCard.id);
+      });
+    });
+
+    // Drag-and-drop support to reassign event to another parallel track
+    node.addEventListener('dragstart', e => {
+      e.dataTransfer?.setData('application/profiler-timeline-event', ev.id);
+      node.classList.add('opacity-50');
+    });
+    node.addEventListener('dragend', () => {
+      node.classList.remove('opacity-50');
+    });
+
+    node.addEventListener('click', e => {
+      if (e.target.closest('button, input, select')) return;
+      openTimelineModal({ editId: ev.id });
     });
   }
 
   function populateTimelineCardSelect(selectedCardId) {
     if (!dom.tlCardSelect || !state.scenario) return;
-    const drawnCards = state.scenario.cards.slice(0, state.drawnCount);
+    const drawnCards = getActiveCards();
     dom.tlCardSelect.innerHTML = `<option value="">— Nessuna carta collegata —</option>` +
       drawnCards.map(c => `<option value="${c.id}" ${c.id === selectedCardId ? 'selected' : ''}>${escapeHtml(c.number)} — ${escapeHtml(c.title)}</option>`).join('');
   }
@@ -649,18 +1444,31 @@
   }
 
   function openTimelineModal(options = {}) {
-    const { editId = null, prefillTime = '', prefillLabel = '', prefillCardId = '', prefillColor = 'amber' } = options;
+    const {
+      editId = null,
+      prefillTime = '',
+      prefillEndTime = '',
+      prefillLabel = '',
+      prefillCardId = '',
+      prefillColor = 'amber',
+      prefillTrackId = ''
+    } = options;
 
     state.editingTimelineId = editId;
     const existing = editId ? state.timelineEvents.find(x => x.id === editId) : null;
 
     const timeVal = existing ? existing.time : prefillTime;
+    const endTimeVal = existing ? (existing.endTime || '') : prefillEndTime;
     const labelVal = existing ? existing.label : prefillLabel;
     const cardIdVal = existing ? (existing.cardId || '') : prefillCardId;
     const colorVal = existing ? (existing.color || 'amber') : prefillColor;
+    const trackIdVal = existing ? (existing.trackId || state.timelineTracks[0]?.id) : (prefillTrackId || state.activeTimelineTrackId || state.timelineTracks[0]?.id);
 
     populateTimelineCardSelect(cardIdVal);
+    populateTimelineTrackSelect(trackIdVal);
+
     dom.tlTimeInput.value = timeVal;
+    if (dom.tlEndTimeInput) dom.tlEndTimeInput.value = endTimeVal;
     dom.tlLabelInput.value = labelVal;
     setTimelineColorSelection(colorVal);
 
@@ -683,7 +1491,7 @@
 
   function updateTimelineModalLinkedCardBar(cardId) {
     if (!dom.tlLinkedActions) return;
-    const card = (cardId && state.scenario) ? state.scenario.cards.find(c => c.id === cardId) : null;
+    const card = cardId ? findCardById(cardId) : null;
     if (card) {
       dom.tlLinkedActions.classList.remove('hidden');
       dom.tlLinkedCardName.textContent = `🔗 ${card.number}: ${card.title}`;
@@ -693,12 +1501,14 @@
   }
 
   function saveTimelineModal() {
-    const timeVal = dom.tlTimeInput.value.trim();
+    const rawTime = dom.tlTimeInput.value.trim();
+    const rawEndTime = dom.tlEndTimeInput ? dom.tlEndTimeInput.value.trim() : '';
     const labelVal = dom.tlLabelInput.value.trim();
     const cardIdVal = dom.tlCardSelect.value;
+    const trackIdVal = dom.tlTrackSelect ? dom.tlTrackSelect.value : state.timelineTracks[0].id;
 
-    if (!timeVal) {
-      showToast('Inserisci un orario o una data (es. 21:51)', 'amber');
+    if (!rawTime) {
+      showToast('Inserisci un orario o una data (es. 21:15)', 'amber');
       dom.tlTimeInput.focus();
       return;
     }
@@ -708,10 +1518,14 @@
       return;
     }
 
+    const { time, endTime } = parseTimeInputAndRange(rawTime, rawEndTime);
+
     if (state.editingTimelineId) {
       const ev = state.timelineEvents.find(x => x.id === state.editingTimelineId);
       if (ev) {
-        ev.time = timeVal;
+        ev.time = time;
+        ev.endTime = endTime;
+        ev.trackId = trackIdVal;
         ev.label = labelVal;
         ev.cardId = cardIdVal || '';
         ev.color = state.editingTimelineColor;
@@ -719,18 +1533,21 @@
     } else {
       state.timelineEvents.push({
         id: 'tl-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-        time: timeVal,
+        trackId: trackIdVal,
+        time,
+        endTime,
         label: labelVal,
         cardId: cardIdVal || '',
         color: state.editingTimelineColor
       });
     }
 
+    state.activeTimelineTrackId = trackIdVal;
     state.timelineCollapsed = false;
     closeTimelineModal();
     renderTimeline();
     saveState();
-    showToast(`Evento "${timeVal} — ${labelVal}" salvato sulla Timeline`, 'amber');
+    showToast(`Evento "${time}${endTime ? ' → ' + endTime : ''}: ${labelVal}" salvato sulla Timeline`, 'amber');
   }
 
   function deleteActiveTimelineEvent() {
@@ -764,20 +1581,8 @@
     state.maxZIndex += 1;
 
     if (!state.cardsState[cardObj.id]) {
-      let spawnX, spawnY;
-      if (isInitial) {
-        spawnX = 75;
-        spawnY = 85;
-      } else {
-        const centerWorld = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
-        const offsetIdx = (state.drawnCount - 1) % 6;
-        spawnX = Math.round(centerWorld.x - 120 + (offsetIdx - 2.5) * 32);
-        spawnY = Math.round(centerWorld.y - 160 + (offsetIdx - 2.5) * 22);
-      }
-
       state.cardsState[cardObj.id] = {
-        x: spawnX,
-        y: spawnY,
+        groupId: null,
         note: '',
         important: false,
         archived: false,
@@ -791,8 +1596,7 @@
     state.selectedCards.clear();
     state.selectedCards.add(cardObj.id);
 
-    renderCards();
-    renderGroups();
+    renderBoard();
     renderDeckUI();
     updateMultiSelectToolbar();
     saveState();
@@ -938,11 +1742,22 @@
 
   function renderAll() {
     renderTimeline();
-    renderGroups();
-    renderCards();
-    renderStrings();
+    renderBoard();
     renderDeckUI();
     updateMultiSelectToolbar();
+  }
+
+  function renderBoard() {
+    renderGroupsDOM();
+    renderCardsDOM();
+  }
+
+  function renderGroups() {
+    renderBoard();
+  }
+
+  function renderCards() {
+    renderBoard();
   }
 
   function getCardDimensions(cs) {
@@ -967,19 +1782,33 @@
   function findGroupContainingCard(cardId) {
     const cs = state.cardsState[cardId];
     if (!cs) return null;
-    return state.groups.find(g => isCardInsideGroup(cs, g)) || null;
+
+    if (cs.groupId !== undefined) {
+      if (!cs.groupId) return null;
+      return state.groups.find(g => g.id === cs.groupId) || null;
+    }
+
+    // Legacy coordinate fallback migration
+    if (typeof cs.x === 'number' && typeof cs.y === 'number') {
+      const legacyGroup = state.groups.find(g => isCardInsideGroup(cs, g)) || null;
+      cs.groupId = legacyGroup ? legacyGroup.id : null;
+      return legacyGroup;
+    }
+
+    cs.groupId = null;
+    return null;
   }
 
   function getCardsInGroup(group) {
     if (!state.scenario) return [];
-    const drawnCards = state.scenario.cards.slice(0, state.drawnCount);
-    return drawnCards.filter(c => {
-      const cs = state.cardsState[c.id];
-      return cs && isCardInsideGroup(cs, group);
+    const activeCards = getActiveCards();
+    return activeCards.filter(c => {
+      const g = findGroupContainingCard(c.id);
+      return g && g.id === group.id;
     });
   }
 
-  function renderGroups() {
+  function renderGroupsDOM() {
     dom.groupsLayer.innerHTML = '';
 
     state.groups.forEach(group => {
@@ -990,42 +1819,34 @@
       const el = document.createElement('div');
       el.id = `group-${group.id}`;
       el.dataset.groupId = group.id;
-      el.className = `group-zone ${theme.border} ${theme.bg}`;
-      el.style.left = `${group.x}px`;
-      el.style.top = `${group.y}px`;
-      el.style.width = `${group.width}px`;
-      el.style.height = `${group.height}px`;
+      el.className = `group-zone ${theme.border} ${theme.bg} shadow-xl`;
 
       el.innerHTML = `
-        <div class="group-zone-header px-3.5 py-2.5 flex items-center justify-between gap-2 ${theme.headerBg}">
-          <div class="flex items-center gap-2 flex-1 min-w-0">
-            <button type="button" class="btn-group-color w-4 h-4 rounded-full ${theme.dot} ring-2 ring-white/20 hover:scale-125 transition shrink-0" title="Cambia colore gruppo"></button>
+        <div class="group-zone-header px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 ${theme.headerBg}">
+          <div class="flex items-center gap-2 flex-1 min-w-[180px]">
+            <button type="button" class="btn-group-color w-4 h-4 rounded-full ${theme.dot} ring-2 ring-white/20 hover:scale-125 transition shrink-0 cursor-pointer" title="Cambia colore gruppo"></button>
             <input type="text" value="${escapeHtml(group.title)}"
               class="group-title-input bg-transparent text-sm font-extrabold ${theme.text} uppercase tracking-wider focus:outline-none focus:bg-black/30 px-1.5 py-0.5 rounded w-full truncate"
-              title="Clicca per rinominare l'area di raggruppamento" />
+              title="Clicca per rinominare il gruppo" />
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <span class="text-xs font-mono-tech px-2 py-0.5 rounded bg-black/50 text-stone-200 border border-white/10" title="Carte presenti in quest'area">
+            <span class="text-xs font-mono-tech px-2 py-0.5 rounded bg-black/50 text-stone-200 border border-white/10" title="Carte presenti in questo gruppo">
               ${cardsInside.length} ${cardsInside.length === 1 ? 'carta' : 'carte'}
             </span>
             <button type="button" class="btn-group-collapse text-xs px-2 py-0.5 rounded bg-stone-800/80 hover:bg-stone-700 text-stone-200 border border-stone-600/50 transition cursor-pointer" title="Riduci a solo titolo (Collapse) o riespandi tutte le carte in questo gruppo">
-              ${allCollapsedInside ? '▾ Espandi' : '▴ Compatta'}
+              ${allCollapsedInside ? '▾ Espandi tutte' : '▴ Compatta tutte'}
             </button>
-            <button type="button" class="btn-group-tidy text-xs px-2 py-0.5 rounded bg-stone-800/80 hover:bg-stone-700 text-stone-200 border border-stone-600/50 transition cursor-pointer" title="Ordina le carte in griglia dentro questo gruppo">
-              Ordina
-            </button>
-            <button type="button" class="btn-group-delete text-stone-400 hover:text-red-400 px-1.5 py-0.5 rounded transition text-sm font-bold cursor-pointer" title="Elimina area gruppo (le carte non verranno eliminate)">
+            <button type="button" class="btn-group-delete text-stone-400 hover:text-red-400 px-1.5 py-0.5 rounded transition text-sm font-bold cursor-pointer" title="Elimina gruppo (le carte torneranno tra i reperti da smistare)">
               ✕
             </button>
           </div>
         </div>
-        <div class="p-2.5 flex justify-end items-end pointer-events-none">
-          <span class="text-[11px] font-mono-tech text-stone-400/80 uppercase tracking-widest select-none">Trascina o usa 📁 sulla carta per aggiungere qui</span>
-        </div>
-        <div class="group-resize-handle flex items-end justify-end p-0.5" title="Trascina per ridimensionare l'area">
-          <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
-            <path d="M11 1L1 11M11 6L6 11M11 10L10 11" stroke="#a8a29e" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+        <div id="group-cards-${group.id}" class="group-cards-container grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 items-start">
+          ${cardsInside.length === 0 ? `
+            <div class="col-span-full py-6 px-4 text-center text-xs font-mono-tech text-stone-400/80 border border-dashed border-white/10 rounded-lg select-none">
+              Nessuna carta in questo gruppo — Usa il bottone <b>📁</b> su una carta (o trascinala qui) per aggiungerla
+            </div>
+          ` : ''}
         </div>
       `;
 
@@ -1033,28 +1854,60 @@
       dom.groupsLayer.appendChild(el);
     });
 
+    const unassignedSection = document.getElementById('unassigned-section');
+    if (unassignedSection && !unassignedSection.dataset.dropBound) {
+      unassignedSection.dataset.dropBound = '1';
+      unassignedSection.addEventListener('dragover', e => {
+        e.preventDefault();
+        unassignedSection.classList.add('border-amber-400', 'bg-stone-900/80');
+      });
+      unassignedSection.addEventListener('dragleave', () => {
+        unassignedSection.classList.remove('border-amber-400', 'bg-stone-900/80');
+      });
+      unassignedSection.addEventListener('drop', e => {
+        e.preventDefault();
+        unassignedSection.classList.remove('border-amber-400', 'bg-stone-900/80');
+        const cid = e.dataTransfer?.getData('text/plain');
+        if (cid && state.cardsState[cid]) {
+          state.cardsState[cid].groupId = null;
+          renderAll();
+          saveState();
+          showToast('Carta spostata in "Nuovi Reperti / Da Smistare"', 'stone');
+        }
+      });
+    }
+
     if (dom.multiGroupSelect) {
-      dom.multiGroupSelect.innerHTML = `<option value="">📁 Aggiungi a un Gruppo...</option>` +
+      dom.multiGroupSelect.innerHTML = `<option value="">📁 Sposta nel Gruppo...</option>` +
         state.groups.map(g => `<option value="${g.id}">${escapeHtml(g.title)}</option>`).join('') +
+        `<option value="__unassigned__">📥 Sposta in Da Smistare</option>` +
         `<option value="__new_group__">➕ Crea Nuovo Gruppo con selezione...</option>`;
     }
   }
 
-  function renderCards() {
+  function renderCardsDOM() {
     if (!state.scenario) return;
     dom.cardsLayer.innerHTML = '';
+    state.groups.forEach(group => {
+      const container = document.getElementById(`group-cards-${group.id}`);
+      if (container && getCardsInGroup(group).length > 0) {
+        container.innerHTML = '';
+      }
+    });
 
-    const drawnCards = state.scenario.cards.slice(0, state.drawnCount);
+    const activeCards = getActiveCards();
+    let unassignedCount = 0;
 
-    drawnCards.forEach(card => {
+    activeCards.forEach(card => {
       let cs = state.cardsState[card.id];
       if (!cs) {
-        cs = { x: 100, y: 100, note: '', important: false, archived: false, collapsed: false, highlights: [], zIndex: 15 };
+        cs = { groupId: null, note: '', important: false, archived: false, collapsed: false, highlights: [] };
         state.cardsState[card.id] = cs;
       }
       if (!Array.isArray(cs.highlights)) cs.highlights = [];
 
-      const catStyle = CATEGORY_STYLES[card.category] || CATEGORY_STYLES['Forense'];
+      const isCustom = Boolean(card.isCustom);
+      const catStyle = CATEGORY_STYLES[card.category] || (isCustom ? CATEGORY_STYLES['Estratto / Nota'] : CATEGORY_STYLES['Forense']);
       const isSelected = state.selectedCards.has(card.id);
       const isLinkStart = state.linkStartCardId === card.id;
       const isCollapsed = Boolean(cs.collapsed) && !cs.archived;
@@ -1062,12 +1915,39 @@
       const hasHighlights = cs.highlights.length > 0;
       const parentGroup = findGroupContainingCard(card.id);
       const parentTheme = parentGroup ? (GROUP_THEMES[parentGroup.theme] || GROUP_THEMES.amber) : null;
+      const hasProcuraQuestions = !isCustom && /QUESITI FINALI DELLA PROCURA/i.test(card.rawText || '');
+
+      if (!parentGroup) {
+        unassignedCount += 1;
+      }
+
+      // Red Strings connected to this card
+      const cardConnections = state.connections.filter(c => c.from === card.id || c.to === card.id);
+      const redStringsHtml = cardConnections.length > 0 ? `
+        <div class="px-2.5 py-1 bg-red-950/15 border-b border-stone-300/80 flex flex-wrap items-center gap-1 shrink-0">
+          ${cardConnections.map(conn => {
+            const otherId = conn.from === card.id ? conn.to : conn.from;
+            const otherCard = findCardById(otherId);
+            return `
+              <div class="inline-flex items-center rounded-full bg-red-950 text-red-100 border border-red-500 text-[10.5px] font-mono-tech overflow-hidden shadow-sm">
+                <button type="button" data-jump-conn-card="${otherId}" class="px-2 py-0.5 hover:bg-red-800 font-bold transition cursor-pointer" title="Vai alla carta collegata ${otherCard ? escapeHtml(otherCard.title) : ''}">
+                  🧶 → ${otherCard ? escapeHtml(otherCard.number) : otherId}${conn.label ? ': ' + escapeHtml(conn.label) : ''}
+                </button>
+                <button type="button" data-edit-conn="${conn.id}" class="px-1.5 py-0.5 bg-red-900/80 hover:bg-red-700 text-red-200 border-l border-red-600/60 transition cursor-pointer" title="Modifica etichetta o rimuovi filo rosso">
+                  ✎
+                </button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      ` : '';
 
       const el = document.createElement('div');
       el.id = `card-${card.id}`;
       el.dataset.cardId = card.id;
+      el.draggable = true;
       el.className = [
-        'crime-card absolute',
+        'crime-card',
         catStyle.headerAccent,
         isSelected ? 'is-selected' : '',
         cs.important ? 'is-important' : '',
@@ -1080,11 +1960,9 @@
         delete cs.justDrawn;
       }
 
-      el.style.left = `${cs.x}px`;
-      el.style.top = `${cs.y}px`;
-      el.style.zIndex = cs.zIndex || 15;
-
-      const illustrationHtml = window.ProfilerIllustrations.render(card.image, card.category, card.number);
+      const illustrationHtml = (!isCustom || card.image)
+        ? window.ProfilerIllustrations.render(card.image, card.category, card.number)
+        : '';
       const formattedRawTextHtml = renderHighlightedText(card.rawText, cs.highlights);
 
       el.innerHTML = `
@@ -1093,15 +1971,20 @@
           <div class="card-pin ${isLinkStart ? 'pin-active ring-4 ring-red-500' : ''}"></div>
         </div>
 
-        <!-- Card Header (Drag Handle + Double click to Collapse/Expand; ONLY Collapse button here) -->
-        <div class="card-header-drag px-3 pt-2.5 pb-1.5 ${isCollapsed ? 'rounded' : 'border-b border-stone-300 rounded-t'} bg-stone-200/75 flex flex-col gap-1 shrink-0" title="Trascina per spostare • Doppio click per ridurre a solo titolo (Collapse)">
+        <!-- Card Header (Double click to Collapse/Expand; ONLY Collapse button here) -->
+        <div class="card-header-drag px-3 pt-2.5 pb-1.5 ${isCollapsed && !redStringsHtml ? 'rounded' : 'border-b border-stone-300 rounded-t'} ${isCustom ? 'bg-purple-100/85' : 'bg-stone-200/75'} flex flex-col gap-1 shrink-0" title="Doppio click per ridurre a solo titolo (Collapse) • Trascina o usa 📁 per cambiare gruppo">
           <!-- Row 1: Number, Category Badge & Collapse Button Only -->
           <div class="flex items-center justify-between gap-1.5">
-            <div class="flex items-center gap-1.5">
-              <span class="font-mono-tech font-extrabold text-sm bg-stone-900 text-amber-400 px-2 py-0.5 rounded shrink-0">${escapeHtml(card.number)}</span>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-mono-tech font-extrabold text-sm ${isCustom ? 'bg-purple-900 text-purple-100' : 'bg-stone-900 text-amber-400'} px-2 py-0.5 rounded shrink-0">${escapeHtml(card.number)}</span>
               <span class="${catStyle.badgeBg} text-[10.5px] font-mono-tech uppercase px-2 py-0.5 rounded font-bold border shrink-0">
                 ${escapeHtml(card.category)}
               </span>
+              ${card.sourceCardId ? `
+                <button type="button" data-jump-source-card="${escapeHtml(card.sourceCardId)}" class="px-1.5 py-0.5 rounded bg-stone-800 hover:bg-amber-500 text-amber-300 hover:text-stone-950 font-mono-tech font-bold text-[10px] transition cursor-pointer" title="Vai alla carta originale da cui è stato estratto questo testo">
+                  🔗 Da ${escapeHtml(card.sourceCardNumber || 'carta')}
+                </button>
+              ` : ''}
             </div>
             <div class="flex items-center gap-1 shrink-0">
               ${isCollapsed && parentTheme ? `<span class="w-2.5 h-2.5 rounded-full ${parentTheme.dot}" title="Nel gruppo: ${escapeHtml(parentGroup.title)}"></span>` : ''}
@@ -1113,16 +1996,34 @@
             </div>
           </div>
 
-          <!-- Row 2: Full Un-truncated Card Title -->
-          <div class="font-extrabold text-[14px] text-stone-900 leading-snug whitespace-normal break-words pt-0.5">
-            ${escapeHtml(card.title)}
-          </div>
+          <!-- Row 2: Full Un-truncated Card Title (Editable on custom cards) -->
+          ${isCustom ? `
+            <input type="text" value="${escapeHtml(card.title)}"
+              class="custom-card-title-input font-extrabold text-[14px] text-stone-900 bg-white/70 focus:bg-white border border-purple-300/90 focus:border-purple-600 rounded px-1.5 py-0.5 leading-snug w-full focus:outline-none"
+              title="Clicca per rinominare questa carta/nota estratta" />
+          ` : `
+            <div class="font-extrabold text-[14px] text-stone-900 leading-snug whitespace-normal break-words pt-0.5">
+              ${escapeHtml(card.title)}
+            </div>
+          `}
 
-          <!-- Row 3: Timestamp -->
+          <!-- Row 3: Timestamp / Origin -->
           <div class="flex items-center justify-between text-xs text-stone-600">
-            <span class="font-mono-tech font-semibold text-stone-700">🕒 ${escapeHtml(card.timestamp)}</span>
+            <span class="font-mono-tech font-semibold text-stone-700">${isCustom ? '✂️' : '🕒'} ${escapeHtml(card.timestamp)}</span>
+            ${hasProcuraQuestions ? `
+              <button type="button" class="btn-extract-questions px-2 py-0.5 rounded bg-purple-800 hover:bg-purple-700 text-purple-100 font-mono-tech font-bold text-[10px] shadow-xs transition cursor-pointer" title="Estrai i Quesiti della Procura in una Carta/Nota dedicata sempre a portata di mano">
+                ✂️ Estrai Quesiti
+              </button>
+            ` : ''}
+            ${isCustom ? `
+              <button type="button" class="btn-toggle-custom-edit px-1.5 py-0.2 rounded bg-purple-200 hover:bg-purple-300 text-purple-950 font-mono-tech font-bold text-[10px] transition cursor-pointer" title="Modifica liberamente il testo estratto">
+                ${cs.editingCustomText ? '✔ Fine modifica' : '✎ Modifica testo'}
+              </button>
+            ` : ''}
           </div>
         </div>
+
+        ${redStringsHtml}
 
         ${cs.archived ? `
           <div class="px-3 py-2 flex items-center justify-between text-xs font-mono-tech text-stone-600 bg-stone-200/60 border-t border-stone-300 rounded-b">
@@ -1130,16 +2031,22 @@
             <button type="button" class="btn-card-archive underline font-bold text-stone-800 cursor-pointer">Ripristina</button>
           </div>
         ` : isCollapsed ? '' : `
-          <!-- Forensic Illustration Preview (Larger & Clearer) -->
-          <div class="card-image-preview h-[112px] w-full px-2.5 pt-1.5 shrink-0 cursor-zoom-in" title="Doppio click per aprire la modale d'ispezione">
-            ${illustrationHtml}
-          </div>
+          ${illustrationHtml ? `
+            <!-- Forensic Illustration Preview (Proportional 20:9 Aspect Ratio + Click to Zoom) -->
+            <div class="card-image-preview aspect-[20/9] w-full px-2.5 pt-1.5 shrink-0 cursor-zoom-in" title="Clicca sul disegno per ingrandirlo con la lente (Zoom)">
+              ${illustrationHtml}
+            </div>
+          ` : ''}
 
-          <!-- Objective Typewriter Raw Text (Selectable for Copy/Paste, Highlighting & Timeline!) -->
-          <div class="card-text-scroll-area px-2.5 py-1.5 flex-1 min-h-0 overflow-y-auto evidence-scroll">
-            <div data-evidence-card-id="${card.id}"
-              class="card-raw-text selectable-evidence-text font-typewriter text-[12.2px] leading-[1.44] p-2.5 text-stone-900 whitespace-pre-line bg-white/85 rounded border border-stone-300/90 shadow-inner"
-              title="Seleziona il testo o un orario col mouse per copiarlo, evidenziarlo o inviarlo alla Timeline">${formattedRawTextHtml}</div>
+          <!-- Objective Typewriter Raw Text (Selectable for Copy/Paste, Highlighting, Extract & Timeline!) -->
+          <div class="card-text-scroll-area px-2.5 py-1.5 flex-1 min-h-0 ${isCustom ? 'max-h-[215px]' : 'max-h-[155px]'} overflow-y-auto evidence-scroll">
+            ${isCustom && cs.editingCustomText ? `
+              <textarea rows="6" class="custom-card-body-input selectable-evidence-text font-typewriter text-[12.2px] leading-[1.44] p-2.5 w-full text-stone-900 bg-white rounded border-2 border-purple-500 shadow-inner focus:outline-none resize-y" placeholder="Scrivi o modifica il testo estratto...">${escapeHtml(card.rawText)}</textarea>
+            ` : `
+              <div data-evidence-card-id="${card.id}"
+                class="card-raw-text selectable-evidence-text font-typewriter text-[12.2px] leading-[1.44] p-2.5 text-stone-900 whitespace-pre-line bg-white/85 rounded border border-stone-300/90 shadow-inner"
+                title="Seleziona una parte di testo col mouse per copiarla, evidenziarla, inviarla alla Timeline o estrarla in una nuova Carta (✂️ Estrai in Carta)">${formattedRawTextHtml}</div>
+            `}
           </div>
 
           <!-- Personal Sticky Note (Post-it Giallo) -->
@@ -1169,9 +2076,15 @@
               <button type="button" class="btn-card-important px-2 py-0.5 rounded hover:bg-amber-200/90 transition text-xs cursor-pointer border ${cs.important ? 'bg-amber-300 text-amber-950 border-amber-500 font-bold' : 'bg-stone-300/60 text-stone-600 border-stone-400/40'}" title="Segna come Importante (Bordo Dorato)">
                 📌
               </button>
-              <button type="button" class="btn-card-archive px-2 py-0.5 rounded hover:bg-stone-300 transition text-xs cursor-pointer border ${cs.archived ? 'bg-stone-800 text-white border-stone-900' : 'bg-stone-300/60 text-stone-600 border-stone-400/40'}" title="${cs.archived ? 'Ripristina carta' : 'Segna come Pista Falsa / Archivia (Opacità 40%)'}">
-                🗑️
-              </button>
+              ${isCustom ? `
+                <button type="button" class="btn-custom-card-delete px-2 py-0.5 rounded bg-red-100 hover:bg-red-600 text-red-800 hover:text-white transition text-xs cursor-pointer border border-red-300" title="Elimina definitivamente questa nota/carta estratta">
+                  🗑️
+                </button>
+              ` : `
+                <button type="button" class="btn-card-archive px-2 py-0.5 rounded hover:bg-stone-300 transition text-xs cursor-pointer border ${cs.archived ? 'bg-stone-800 text-white border-stone-900' : 'bg-stone-300/60 text-stone-600 border-stone-400/40'}" title="${cs.archived ? 'Ripristina carta' : 'Segna come Pista Falsa / Archivia (Opacità 40%)'}">
+                  🗑️
+                </button>
+              `}
             </div>
             <button type="button" class="btn-card-inspect px-2.5 py-0.5 rounded bg-stone-800 hover:bg-amber-600 text-stone-100 hover:text-stone-950 font-bold transition text-xs flex items-center gap-1 cursor-pointer shrink-0 shadow-sm" title="Ingrandisci e ispeziona il reperto ad alta risoluzione">
               <span>🔍</span>
@@ -1182,103 +2095,35 @@
       `;
 
       bindCardEvents(el, card.id);
-      dom.cardsLayer.appendChild(el);
-    });
-  }
 
-  function getPinCoordinates(cardId) {
-    const cs = state.cardsState[cardId];
-    if (!cs) return null;
-    const dims = getCardDimensions(cs);
-    return {
-      x: cs.x + dims.width / 2,
-      y: cs.y + 2
-    };
+      if (parentGroup) {
+        const groupContainer = document.getElementById(`group-cards-${parentGroup.id}`);
+        if (groupContainer) {
+          groupContainer.appendChild(el);
+        } else {
+          dom.cardsLayer.appendChild(el);
+        }
+      } else {
+        dom.cardsLayer.appendChild(el);
+      }
+    });
+
+    const unassignedBadge = document.getElementById('unassigned-count-badge');
+    if (unassignedBadge) {
+      unassignedBadge.textContent = String(unassignedCount);
+    }
+
+    if (unassignedCount === 0) {
+      dom.cardsLayer.innerHTML = `
+        <div class="col-span-full py-2.5 px-3 text-center text-xs font-mono-tech text-stone-400/80 border border-dashed border-stone-700/70 rounded-lg select-none">
+          ✅ Tutti i reperti pescati sono stati assegnati ai gruppi sottostanti — Pesca una nuova carta o trascina qui per rimuoverla da un gruppo
+        </div>
+      `;
+    }
   }
 
   function renderStrings() {
-    dom.stringsSvg.innerHTML = '';
-    dom.stringLabelsLayer.innerHTML = '';
-
-    state.connections.forEach(conn => {
-      const p1 = getPinCoordinates(conn.from);
-      const p2 = getPinCoordinates(conn.to);
-      if (!p1 || !p2) return;
-
-      const dx = p2.x - p1.x;
-      const dy = p2.y - p1.y;
-      const dist = Math.hypot(dx, dy);
-      const sag = Math.min(90, Math.max(18, dist * 0.14));
-      const cx = (p1.x + p2.x) / 2;
-      const cy = (p1.y + p2.y) / 2 + sag;
-
-      const midX = 0.25 * p1.x + 0.5 * cx + 0.25 * p2.x;
-      const midY = 0.25 * p1.y + 0.5 * cy + 0.25 * p2.y;
-
-      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.setAttribute('class', 'red-string-group');
-
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', `M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}`);
-      path.setAttribute('class', 'red-string-path');
-
-      const knot1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      knot1.setAttribute('cx', p1.x);
-      knot1.setAttribute('cy', p1.y);
-      knot1.setAttribute('r', '5');
-      knot1.setAttribute('fill', '#991b1b');
-      knot1.setAttribute('stroke', '#ef4444');
-      knot1.setAttribute('stroke-width', '1.5');
-
-      const knot2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      knot2.setAttribute('cx', p2.x);
-      knot2.setAttribute('cy', p2.y);
-      knot2.setAttribute('r', '5');
-      knot2.setAttribute('fill', '#991b1b');
-      knot2.setAttribute('stroke', '#ef4444');
-      knot2.setAttribute('stroke-width', '1.5');
-
-      g.appendChild(path);
-      g.appendChild(knot1);
-      g.appendChild(knot2);
-      dom.stringsSvg.appendChild(g);
-
-      const badge = document.createElement('div');
-      badge.className = conn.label
-        ? 'string-label-badge absolute z-30 px-2.5 py-0.5 rounded-full text-xs font-mono-tech font-bold bg-red-950/95 text-red-100 border border-red-500 hover:bg-red-800 hover:scale-105 transition flex items-center gap-1.5'
-        : 'string-label-badge absolute z-30 px-2 py-0.5 rounded-full text-[11px] font-mono-tech bg-stone-900/90 text-stone-300 border border-red-600/60 opacity-80 hover:opacity-100 hover:bg-red-950 hover:text-white transition';
-      badge.style.left = `${midX}px`;
-      badge.style.top = `${midY}px`;
-      badge.title = 'Clicca per modificare l\'etichetta o eliminare il filo rosso';
-      badge.innerHTML = conn.label
-        ? `<span>🧶 ${escapeHtml(conn.label)}</span>`
-        : `<span>+ Etichetta</span>`;
-
-      badge.addEventListener('mousedown', e => e.stopPropagation());
-      badge.addEventListener('click', e => {
-        e.stopPropagation();
-        openStringModal(conn.id);
-      });
-
-      dom.stringLabelsLayer.appendChild(badge);
-    });
-
-    if (state.linkStartCardId) {
-      const p1 = getPinCoordinates(state.linkStartCardId);
-      if (p1) {
-        const p2 = state.mouseWorldPos;
-        const cx = (p1.x + p2.x) / 2;
-        const cy = (p1.y + p2.y) / 2 + 28;
-
-        const previewPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        previewPath.setAttribute('d', `M ${p1.x} ${p1.y} Q ${cx} ${cy} ${p2.x} ${p2.y}`);
-        previewPath.setAttribute('fill', 'none');
-        previewPath.setAttribute('stroke', '#ef4444');
-        previewPath.setAttribute('stroke-width', '3');
-        previewPath.setAttribute('stroke-dasharray', '6,4');
-        dom.stringsSvg.appendChild(previewPath);
-      }
-    }
+    // Red Strings are rendered directly on each connected card in Structured Grid mode
   }
 
   // =========================================================================
@@ -1318,9 +2163,79 @@
     const headerDrag = cardEl.querySelector('.card-header-drag');
     if (headerDrag) {
       headerDrag.addEventListener('dblclick', e => {
-        if (e.target.tagName === 'BUTTON') return;
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
         e.stopPropagation();
         toggleCardCollapsed(cardId);
+      });
+    }
+
+    // Custom Card inline title & body editing + source jump + delete + 1-click extract questions
+    const customTitleInput = cardEl.querySelector('.custom-card-title-input');
+    if (customTitleInput) {
+      customTitleInput.addEventListener('mousedown', e => e.stopPropagation());
+      customTitleInput.addEventListener('click', e => e.stopPropagation());
+      customTitleInput.addEventListener('input', e => {
+        const card = findCardById(cardId);
+        if (card) {
+          card.title = e.target.value;
+          saveState();
+        }
+      });
+    }
+
+    const btnToggleCustomEdit = cardEl.querySelector('.btn-toggle-custom-edit');
+    if (btnToggleCustomEdit) {
+      btnToggleCustomEdit.addEventListener('mousedown', e => e.stopPropagation());
+      btnToggleCustomEdit.addEventListener('click', e => {
+        e.stopPropagation();
+        if (state.cardsState[cardId]) {
+          state.cardsState[cardId].editingCustomText = !state.cardsState[cardId].editingCustomText;
+          renderBoard();
+          saveState();
+        }
+      });
+    }
+
+    const customBodyInput = cardEl.querySelector('.custom-card-body-input');
+    if (customBodyInput) {
+      customBodyInput.addEventListener('mousedown', e => e.stopPropagation());
+      customBodyInput.addEventListener('click', e => e.stopPropagation());
+      customBodyInput.addEventListener('input', e => {
+        const card = findCardById(cardId);
+        if (card) {
+          card.rawText = e.target.value;
+          saveState();
+        }
+      });
+    }
+
+    cardEl.querySelectorAll('[data-jump-source-card]').forEach(btn => {
+      btn.addEventListener('mousedown', e => e.stopPropagation());
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        focusCardOnBoard(btn.dataset.jumpSourceCard);
+      });
+    });
+
+    const btnExtractQuestions = cardEl.querySelector('.btn-extract-questions');
+    if (btnExtractQuestions) {
+      btnExtractQuestions.addEventListener('mousedown', e => e.stopPropagation());
+      btnExtractQuestions.addEventListener('click', e => {
+        e.stopPropagation();
+        const card = findCardById(cardId);
+        if (!card) return;
+        const idx = card.rawText.search(/QUESITI FINALI DELLA PROCURA/i);
+        const snippet = idx !== -1 ? card.rawText.slice(idx).trim() : card.rawText;
+        createCustomCardFromSnippet(cardId, snippet, `Quesiti della Procura (${card.number})`);
+      });
+    }
+
+    const btnCustomDelete = cardEl.querySelector('.btn-custom-card-delete');
+    if (btnCustomDelete) {
+      btnCustomDelete.addEventListener('mousedown', e => e.stopPropagation());
+      btnCustomDelete.addEventListener('click', e => {
+        e.stopPropagation();
+        deleteCustomCard(cardId);
       });
     }
 
@@ -1329,10 +2244,11 @@
       btnTimeline.addEventListener('mousedown', e => e.stopPropagation());
       btnTimeline.addEventListener('click', e => {
         e.stopPropagation();
-        const card = state.scenario?.cards.find(c => c.id === cardId);
-        const extractedTime = card ? extractTimeFromSnippet('', card.timestamp) : '';
+        const card = findCardById(cardId);
+        const timeRange = card ? extractTimeRangeFromSnippet('', card.timestamp) : { time: '', endTime: '' };
         openTimelineModal({
-          prefillTime: extractedTime,
+          prefillTime: timeRange.time,
+          prefillEndTime: timeRange.endTime,
           prefillLabel: card ? card.title : '',
           prefillCardId: cardId,
           prefillColor: 'amber'
@@ -1369,9 +2285,14 @@
 
     const imgPreview = cardEl.querySelector('.card-image-preview');
     if (imgPreview) {
-      imgPreview.addEventListener('dblclick', e => {
+      imgPreview.addEventListener('mousedown', e => e.stopPropagation());
+      imgPreview.addEventListener('click', e => {
         e.stopPropagation();
-        openInspectModal(cardId);
+        if (state.toolMode === 'link' || state.linkStartCardId) {
+          handleCardLinkClick(cardId);
+          return;
+        }
+        openImageZoomModal(cardId);
       });
     }
 
@@ -1408,13 +2329,39 @@
       });
     }
 
-    // 5. Card Dragging & Selection
-    cardEl.addEventListener('mousedown', e => {
-      if (e.button !== 0) return;
-      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') {
+    // 5. Red String Connection Badges on Card
+    cardEl.querySelectorAll('[data-jump-conn-card]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        focusCardOnBoard(btn.dataset.jumpConnCard);
+      });
+    });
+    cardEl.querySelectorAll('[data-edit-conn]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        openStringModal(btn.dataset.editConn);
+      });
+    });
+
+    // 6. HTML5 Drag & Drop between Groups + Click Selection
+    cardEl.addEventListener('dragstart', e => {
+      if (document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT')) {
+        e.preventDefault();
         return;
       }
-      e.stopPropagation();
+      e.dataTransfer?.setData('text/plain', cardId);
+      cardEl.classList.add('opacity-60');
+    });
+
+    cardEl.addEventListener('dragend', () => {
+      cardEl.classList.remove('opacity-60');
+      clearHoveredGroups();
+    });
+
+    cardEl.addEventListener('click', e => {
+      if (e.target.closest('button, textarea, input, select, .card-raw-text')) {
+        return;
+      }
       hideTextSelectionToolbar();
       closeCardGroupPopover();
 
@@ -1431,91 +2378,15 @@
           state.selectedCards.add(cardId);
           cardEl.classList.add('is-selected');
         }
-        updateMultiSelectToolbar();
-      } else if (!state.selectedCards.has(cardId)) {
+      } else {
         state.selectedCards.clear();
         document.querySelectorAll('.crime-card.is-selected').forEach(el => el.classList.remove('is-selected'));
         state.selectedCards.add(cardId);
         cardEl.classList.add('is-selected');
-        updateMultiSelectToolbar();
       }
 
+      updateMultiSelectToolbar();
       renderTimeline();
-
-      state.selectedCards.forEach(id => {
-        state.maxZIndex += 1;
-        if (state.cardsState[id]) {
-          state.cardsState[id].zIndex = state.maxZIndex;
-          const domCard = document.getElementById(`card-${id}`);
-          if (domCard) domCard.style.zIndex = state.maxZIndex;
-        }
-      });
-
-      const startWorld = screenToWorld(e.clientX, e.clientY);
-      const initialPositions = {};
-      state.selectedCards.forEach(id => {
-        if (state.cardsState[id]) {
-          initialPositions[id] = {
-            x: state.cardsState[id].x,
-            y: state.cardsState[id].y
-          };
-        }
-      });
-
-      let moved = false;
-
-      function onMouseMove(ev) {
-        const currWorld = screenToWorld(ev.clientX, ev.clientY);
-        const dx = currWorld.x - startWorld.x;
-        const dy = currWorld.y - startWorld.y;
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
-
-        state.selectedCards.forEach(id => {
-          const initPos = initialPositions[id];
-          if (!initPos) return;
-          const nx = Math.round(initPos.x + dx);
-          const ny = Math.round(initPos.y + dy);
-          state.cardsState[id].x = nx;
-          state.cardsState[id].y = ny;
-
-          const domEl = document.getElementById(`card-${id}`);
-          if (domEl) {
-            domEl.style.left = `${nx}px`;
-            domEl.style.top = `${ny}px`;
-          }
-        });
-
-        highlightHoveredGroups();
-        renderStrings();
-      }
-
-      function onMouseUp() {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-        clearHoveredGroups();
-        if (moved) {
-          // If any dragged card was dropped inside a group, auto-expand that group if the card overflows its edges
-          autoExpandGroupsForDroppedCards(Array.from(state.selectedCards));
-          renderGroups();
-          renderCards();
-          saveState();
-        }
-      }
-
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
-    });
-  }
-
-  function highlightHoveredGroups() {
-    state.groups.forEach(g => {
-      const gEl = document.getElementById(`group-${g.id}`);
-      if (!gEl) return;
-      const anyInside = Array.from(state.selectedCards).some(id => {
-        const cs = state.cardsState[id];
-        return cs && isCardInsideGroup(cs, g);
-      });
-      gEl.classList.toggle('drop-target-hover', anyInside);
     });
   }
 
@@ -1553,7 +2424,13 @@
 
     dom.cardGroupPopoverList.innerHTML = `
       ${itemsHtml}
-      <div class="border-t border-stone-800 mt-1 pt-1">
+      <div class="border-t border-stone-800 mt-1 pt-1 flex flex-col gap-1">
+        ${currentGroup ? `
+          <button type="button" data-pick-group="__unassigned__"
+            class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-stone-300 hover:bg-stone-800 font-medium flex items-center gap-2 cursor-pointer">
+            <span>📥 Sposta in "Nuovi Reperti / Da Smistare"</span>
+          </button>
+        ` : ''}
         <button type="button" data-pick-group="__new_group__"
           class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-amber-300 hover:bg-stone-800 font-semibold flex items-center gap-2 cursor-pointer">
           <span>➕ Crea Nuovo Gruppo con questa carta</span>
@@ -1568,6 +2445,11 @@
         closeCardGroupPopover();
         if (targetGroupId === '__new_group__') {
           createNewGroupWithCards([cardId]);
+        } else if (targetGroupId === '__unassigned__') {
+          if (state.cardsState[cardId]) state.cardsState[cardId].groupId = null;
+          renderAll();
+          saveState();
+          showToast('Carta riportata in "Nuovi Reperti / Da Smistare"', 'stone');
         } else {
           addCardsToGroup(targetGroupId, [cardId]);
         }
@@ -1596,18 +2478,11 @@
 
   function createNewGroupWithCards(cardIds) {
     if (!cardIds || cardIds.length === 0) return;
-    const firstCs = state.cardsState[cardIds[0]];
-    const baseX = firstCs ? Math.max(20, firstCs.x - 20) : 120;
-    const baseY = firstCs ? Math.max(20, firstCs.y - 54) : 120;
     const themeKey = THEME_KEYS[state.groups.length % THEME_KEYS.length];
 
     const newGroup = {
       id: 'grp-' + Date.now(),
       title: '📁 NUOVO GRUPPO INDIZI',
-      x: baseX,
-      y: baseY,
-      width: 280,
-      height: 220,
       theme: themeKey
     };
 
@@ -1616,23 +2491,20 @@
   }
 
   /**
-   * Adds one or more cards to an existing group and automatically enlarges
-   * the group's width and height to accommodate all cards inside it cleanly.
+   * Adds one or more cards to an existing group; in Structured Grid mode,
+   * the group's CSS grid container automatically grows vertically to accommodate them.
    */
   function addCardsToGroup(groupId, cardIdsToAdd) {
     if (!groupId || !Array.isArray(cardIdsToAdd) || cardIdsToAdd.length === 0) return;
     const group = state.groups.find(g => g.id === groupId);
     if (!group) return;
 
-    const existingIds = getCardsInGroup(group).map(c => c.id);
-    const allCardIds = [...new Set([...existingIds, ...cardIdsToAdd])];
+    cardIdsToAdd.forEach(cid => {
+      if (state.cardsState[cid]) {
+        state.cardsState[cid].groupId = group.id;
+      }
+    });
 
-    const prevWidth = group.width;
-    const prevHeight = group.height;
-
-    layoutCardsInsideGroup(group, allCardIds, true);
-
-    const grew = group.width > prevWidth || group.height > prevHeight;
     renderAll();
     saveState();
 
@@ -1644,64 +2516,24 @@
     }
 
     if (cardIdsToAdd.length === 1 && state.scenario) {
-      const card = state.scenario.cards.find(c => c.id === cardIdsToAdd[0]);
+      const card = findCardById(cardIdsToAdd[0]);
       showToast(
-        `${card ? 'Carta ' + card.number : 'Carta'} aggiunta a "${group.title}"${grew ? ' (gruppo ingrandito automaticamente)' : ''}`,
+        `${card ? 'Carta ' + card.number : 'Carta'} aggiunta a "${group.title}"`,
         'amber'
       );
     } else {
       showToast(
-        `${cardIdsToAdd.length} carte aggiunte a "${group.title}"${grew ? ' (gruppo ingrandito automaticamente)' : ''}`,
+        `${cardIdsToAdd.length} carte aggiunte a "${group.title}"`,
         'amber'
       );
     }
   }
 
-  /**
-   * If a user manually drags and drops a card so its center lands inside a group,
-   * automatically expand that group's bounds if the card overflows its edges.
-   */
-  function autoExpandGroupsForDroppedCards(droppedCardIds) {
-    const padX = 16;
-    const padBottom = 18;
-    const padTop = 48;
-
-    droppedCardIds.forEach(id => {
-      const cs = state.cardsState[id];
-      if (!cs) return;
-      const group = findGroupContainingCard(id);
-      if (!group) return;
-
-      const dims = getCardDimensions(cs);
-      if (cs.x < group.x + padX) {
-        const diff = (group.x + padX) - cs.x;
-        group.x -= diff;
-        group.width += diff;
-      }
-      if (cs.y < group.y + padTop) {
-        const diff = (group.y + padTop) - cs.y;
-        group.y -= diff;
-        group.height += diff;
-      }
-      const neededRight = (cs.x + dims.width + padX) - group.x;
-      if (neededRight > group.width) {
-        group.width = neededRight;
-      }
-      const neededBottom = (cs.y + dims.height + padBottom) - group.y;
-      if (neededBottom > group.height) {
-        group.height = neededBottom;
-      }
-    });
-  }
-
   function bindGroupEvents(groupEl, group) {
-    const header = groupEl.querySelector('.group-zone-header');
     const titleInput = groupEl.querySelector('.group-title-input');
     const btnColor = groupEl.querySelector('.btn-group-color');
     const btnCollapse = groupEl.querySelector('.btn-group-collapse');
-    const btnTidy = groupEl.querySelector('.btn-group-tidy');
     const btnDelete = groupEl.querySelector('.btn-group-delete');
-    const resizeHandle = groupEl.querySelector('.group-resize-handle');
 
     titleInput.addEventListener('mousedown', e => e.stopPropagation());
     titleInput.addEventListener('input', e => {
@@ -1725,7 +2557,7 @@
         e.stopPropagation();
         const cardsInside = getCardsInGroup(group);
         if (cardsInside.length === 0) {
-          showToast('Trascina o aggiungi prima delle carte dentro questo gruppo!', 'stone');
+          showToast('Aggiungi prima delle carte dentro questo gruppo!', 'stone');
           return;
         }
         const shouldCollapse = cardsInside.some(c => !state.cardsState[c.id]?.collapsed);
@@ -1733,164 +2565,42 @@
           const cs = state.cardsState[c.id];
           if (cs) cs.collapsed = shouldCollapse;
         });
-        tidyCardsInGroup(group);
+        renderAll();
+        saveState();
       });
     }
-
-    btnTidy.addEventListener('mousedown', e => e.stopPropagation());
-    btnTidy.addEventListener('click', e => {
-      e.stopPropagation();
-      tidyCardsInGroup(group);
-    });
 
     btnDelete.addEventListener('mousedown', e => e.stopPropagation());
     btnDelete.addEventListener('click', e => {
       e.stopPropagation();
+      getCardsInGroup(group).forEach(c => {
+        if (state.cardsState[c.id]) state.cardsState[c.id].groupId = null;
+      });
       state.groups = state.groups.filter(g => g.id !== group.id);
       renderGroups();
       renderCards();
       saveState();
-      showToast('Area gruppo rimossa (le carte sono rimaste sulla lavagna)', 'stone');
+      showToast('Gruppo rimosso (le carte sono tornate in "Nuovi Reperti / Da Smistare")', 'stone');
     });
 
-    header.addEventListener('mousedown', e => {
-      if (e.button !== 0 || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
-      e.stopPropagation();
-      closeCardGroupPopover();
-
-      const startWorld = screenToWorld(e.clientX, e.clientY);
-      const startGroupX = group.x;
-      const startGroupY = group.y;
-
-      const containedCards = getCardsInGroup(group);
-      const initialCardPos = {};
-      containedCards.forEach(c => {
-        initialCardPos[c.id] = {
-          x: state.cardsState[c.id].x,
-          y: state.cardsState[c.id].y
-        };
-      });
-
-      function onMouseMove(ev) {
-        const currWorld = screenToWorld(ev.clientX, ev.clientY);
-        const dx = Math.round(currWorld.x - startWorld.x);
-        const dy = Math.round(currWorld.y - startWorld.y);
-
-        group.x = startGroupX + dx;
-        group.y = startGroupY + dy;
-        groupEl.style.left = `${group.x}px`;
-        groupEl.style.top = `${group.y}px`;
-
-        containedCards.forEach(c => {
-          const initP = initialCardPos[c.id];
-          if (!initP) return;
-          state.cardsState[c.id].x = initP.x + dx;
-          state.cardsState[c.id].y = initP.y + dy;
-          const cEl = document.getElementById(`card-${c.id}`);
-          if (cEl) {
-            cEl.style.left = `${state.cardsState[c.id].x}px`;
-            cEl.style.top = `${state.cardsState[c.id].y}px`;
-          }
-        });
-
-        renderStrings();
-      }
-
-      function onMouseUp() {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-        saveState();
-      }
-
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
+    // HTML5 Drop Target for Cards
+    groupEl.addEventListener('dragover', e => {
+      e.preventDefault();
+      groupEl.classList.add('drop-target-hover');
     });
-
-    resizeHandle.addEventListener('mousedown', e => {
-      if (e.button !== 0) return;
-      e.stopPropagation();
-
-      const startWorld = screenToWorld(e.clientX, e.clientY);
-      const startW = group.width;
-      const startH = group.height;
-
-      function onMouseMove(ev) {
-        const currWorld = screenToWorld(ev.clientX, ev.clientY);
-        group.width = Math.max(280, Math.round(startW + (currWorld.x - startWorld.x)));
-        group.height = Math.max(160, Math.round(startH + (currWorld.y - startWorld.y)));
-        groupEl.style.width = `${group.width}px`;
-        groupEl.style.height = `${group.height}px`;
+    groupEl.addEventListener('dragleave', e => {
+      if (!groupEl.contains(e.relatedTarget)) {
+        groupEl.classList.remove('drop-target-hover');
       }
-
-      function onMouseUp() {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-        renderGroups();
-        renderCards();
-        saveState();
-      }
-
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
     });
-  }
-
-  function layoutCardsInsideGroup(group, cardIds, autoGrow = true) {
-    const stepX = 304;
-    const currentCols = Math.max(1, Math.floor((group.width - 20) / stepX));
-
-    // If autoGrow is enabled, widen the group automatically when more columns make sense
-    let targetCols = currentCols;
-    if (autoGrow) {
-      if (cardIds.length >= 2 && targetCols < 2) {
-        targetCols = 2;
-      } else if (cardIds.length >= 5 && targetCols < 3) {
-        targetCols = 3;
+    groupEl.addEventListener('drop', e => {
+      e.preventDefault();
+      groupEl.classList.remove('drop-target-hover');
+      const draggedCardId = e.dataTransfer?.getData('text/plain');
+      if (draggedCardId) {
+        addCardsToGroup(group.id, [draggedCardId]);
       }
-    }
-
-    const neededWidth = 32 + Math.min(Math.max(1, cardIds.length), targetCols) * stepX;
-    if (autoGrow && group.width < neededWidth) {
-      group.width = neededWidth;
-    }
-
-    const cols = Math.max(1, Math.floor((group.width - 20) / stepX));
-    let currentY = group.y + 52;
-
-    for (let i = 0; i < cardIds.length; i += cols) {
-      const rowIds = cardIds.slice(i, i + cols);
-      let rowMaxHeight = 0;
-
-      rowIds.forEach((id, colIdx) => {
-        const cs = state.cardsState[id];
-        if (!cs) return;
-        cs.x = group.x + 16 + colIdx * stepX;
-        cs.y = currentY;
-        state.maxZIndex += 1;
-        cs.zIndex = state.maxZIndex;
-        const dims = getCardDimensions(cs);
-        if (dims.height > rowMaxHeight) rowMaxHeight = dims.height;
-      });
-
-      currentY += rowMaxHeight + 16;
-    }
-
-    const neededHeight = Math.max(180, currentY - group.y + 16);
-    if (autoGrow && group.height < neededHeight) {
-      group.height = neededHeight;
-    }
-  }
-
-  function tidyCardsInGroup(group) {
-    const cardsInside = getCardsInGroup(group);
-    if (cardsInside.length === 0) {
-      showToast('Trascina o aggiungi prima delle carte dentro questo gruppo!', 'stone');
-      return;
-    }
-
-    layoutCardsInsideGroup(group, cardsInside.map(c => c.id), true);
-    renderAll();
-    saveState();
+    });
   }
 
   // =========================================================================
@@ -1900,18 +2610,15 @@
   function handleCardLinkClick(cardId) {
     if (!state.linkStartCardId) {
       state.linkStartCardId = cardId;
-      state.mouseWorldPos = getPinCoordinates(cardId) || { x: 0, y: 0 };
       updateLinkBanner();
-      renderCards();
-      renderStrings();
+      renderBoard();
       return;
     }
 
     if (state.linkStartCardId === cardId) {
       state.linkStartCardId = null;
       updateLinkBanner();
-      renderCards();
-      renderStrings();
+      renderBoard();
       return;
     }
 
@@ -1923,8 +2630,7 @@
     if (existing) {
       state.linkStartCardId = null;
       updateLinkBanner();
-      renderCards();
-      renderStrings();
+      renderBoard();
       openStringModal(existing.id);
       return;
     }
@@ -1939,8 +2645,7 @@
     state.connections.push(newConn);
     state.linkStartCardId = null;
     updateLinkBanner();
-    renderCards();
-    renderStrings();
+    renderBoard();
     saveState();
 
     openStringModal(newConn.id);
@@ -1951,7 +2656,7 @@
     if (dom.linkModeBanner) {
       dom.linkModeBanner.classList.toggle('hidden', !active);
       if (state.linkStartCardId && state.scenario) {
-        const card = state.scenario.cards.find(c => c.id === state.linkStartCardId);
+        const card = findCardById(state.linkStartCardId);
         dom.linkBannerText.textContent = `🧶 Filo Rosso agganciato a ${card ? card.number : ''} — Clicca sulla seconda carta per collegarla (ESC per annullare)`;
       } else {
         dom.linkBannerText.textContent = `🧶 Modalità Filo Rosso attiva — Clicca sulla prima carta o su una puntina`;
@@ -1982,7 +2687,10 @@
     const conn = state.connections.find(c => c.id === state.editingStringId);
     if (conn) {
       conn.label = dom.stringLabelInput.value.trim();
-      renderStrings();
+      renderBoard();
+      if (state.inspectedCardId && !dom.inspectModal.classList.contains('hidden')) {
+        openInspectModal(state.inspectedCardId);
+      }
       saveState();
     }
     closeStringModal();
@@ -1990,7 +2698,10 @@
 
   function deleteActiveString() {
     state.connections = state.connections.filter(c => c.id !== state.editingStringId);
-    renderStrings();
+    renderBoard();
+    if (state.inspectedCardId && !dom.inspectModal.classList.contains('hidden')) {
+      openInspectModal(state.inspectedCardId);
+    }
     saveState();
     closeStringModal();
     showToast('Filo rosso rimosso', 'stone');
@@ -2010,9 +2721,7 @@
     if (!cs) return;
     cs.collapsed = !cs.collapsed;
     if (cs.collapsed) cs.archived = false;
-    renderCards();
-    renderStrings();
-    renderGroups();
+    renderBoard();
     saveState();
   }
 
@@ -2049,7 +2758,7 @@
       }
       if (count === 1 && state.scenario) {
         const onlyId = Array.from(state.selectedCards)[0];
-        const card = state.scenario.cards.find(c => c.id === onlyId);
+        const card = findCardById(onlyId);
         dom.multiSelectCount.textContent = card ? `Carta ${card.number} selezionata` : '1 carta selezionata';
       } else {
         dom.multiSelectCount.textContent = `${count} carte selezionate`;
@@ -2068,12 +2777,13 @@
 
   function openInspectModal(cardId) {
     if (!state.scenario) return;
-    const card = state.scenario.cards.find(c => c.id === cardId);
+    const card = findCardById(cardId);
     if (!card) return;
     state.inspectedCardId = cardId;
+    const isCustom = Boolean(card.isCustom);
     const cs = state.cardsState[cardId] || { highlights: [] };
     if (!Array.isArray(cs.highlights)) cs.highlights = [];
-    const catStyle = CATEGORY_STYLES[card.category] || CATEGORY_STYLES['Forense'];
+    const catStyle = CATEGORY_STYLES[card.category] || (isCustom ? CATEGORY_STYLES['Estratto / Nota'] : CATEGORY_STYLES['Forense']);
     const currentGroup = findGroupContainingCard(cardId);
 
     const linkedStrings = state.connections.filter(c => c.from === cardId || c.to === cardId);
@@ -2081,7 +2791,7 @@
       ? `<p class="text-xs text-stone-500 italic">Nessun filo rosso collegato a questo reperto.</p>`
       : linkedStrings.map(conn => {
           const otherId = conn.from === cardId ? conn.to : conn.from;
-          const otherCard = state.scenario.cards.find(c => c.id === otherId);
+          const otherCard = findCardById(otherId);
           return `
             <div class="flex items-center justify-between bg-stone-900/90 border border-red-900/60 px-2.5 py-1.5 rounded text-xs">
               <div class="flex items-center gap-2">
@@ -2100,9 +2810,37 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Left column: High-Res Evidence Visual & Status -->
         <div class="lg:col-span-5 flex flex-col gap-4">
-          <div class="h-64 w-full rounded-lg overflow-hidden border-2 border-stone-700 shadow-inner bg-stone-950">
-            ${window.ProfilerIllustrations.render(card.image, card.category, card.number)}
-          </div>
+          ${(!isCustom || card.image) ? `
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between px-1">
+                <span class="text-[11px] font-mono-tech uppercase text-amber-400 font-bold">🎨 Tavola Illustrata (Zoom &amp; Trascina)</span>
+                <div class="flex items-center gap-1">
+                  <button type="button" id="modal-img-zoom-out" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded text-[11px] font-mono-tech font-bold cursor-pointer" title="Riduci zoom disegno">－</button>
+                  <span id="modal-img-zoom-label" class="text-[10px] font-mono-tech text-amber-300 min-w-[40px] text-center">100%</span>
+                  <button type="button" id="modal-img-zoom-in" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded text-[11px] font-mono-tech font-bold cursor-pointer" title="Aumenta zoom disegno">＋</button>
+                  <button type="button" id="modal-img-zoom-reset" class="px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 rounded text-[10px] font-mono-tech cursor-pointer" title="Reset 100%">100%</button>
+                  <button type="button" id="modal-img-fullscreen" class="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 rounded text-[10px] font-bold cursor-pointer" title="Apri il disegno a tutto schermo con la lente">⛶ Lente</button>
+                </div>
+              </div>
+              <div id="modal-img-viewport" class="aspect-[20/9] w-full rounded-lg overflow-hidden border-2 border-stone-700 shadow-inner bg-[#ede3ce] relative cursor-grab active:cursor-grabbing select-none" style="touch-action: none;" title="Usa la rotellina per zoomare • Trascina per muoverti nel disegno">
+                <div id="modal-img-stage" class="w-full h-full origin-center transition-transform duration-75">
+                  ${window.ProfilerIllustrations.render(card.image, card.category, card.number, { showZoomHint: false })}
+                </div>
+              </div>
+            </div>
+          ` : `
+            <div class="bg-purple-950/30 border border-purple-500/50 rounded-lg p-3.5 text-xs text-purple-200 flex items-center justify-between gap-2">
+              <div>
+                <div class="font-mono-tech font-bold uppercase text-purple-300">✂️ Carta / Nota Dedicata</div>
+                <div class="text-stone-300 mt-0.5">${card.sourceCardNumber ? `Estratta dalla Carta ${escapeHtml(card.sourceCardNumber)}` : 'Creata manualmente sulla lavagna'}</div>
+              </div>
+              ${card.sourceCardId ? `
+                <button type="button" data-open-card="${escapeHtml(card.sourceCardId)}" class="px-2.5 py-1 rounded bg-purple-800 hover:bg-purple-700 text-white font-mono-tech font-bold text-xs cursor-pointer shrink-0">
+                  🔗 Apri ${escapeHtml(card.sourceCardNumber)}
+                </button>
+              ` : ''}
+            </div>
+          `}
 
           <div class="bg-stone-900/90 border border-stone-700/80 rounded-lg p-3.5 flex flex-col gap-2.5">
             <div class="text-[11px] font-mono-tech uppercase text-stone-400 tracking-wider">Stato &amp; Gruppo sulla Lavagna</div>
@@ -2116,15 +2854,15 @@
               <button type="button" id="modal-btn-important" class="py-2 px-2 rounded font-bold text-xs border transition flex items-center justify-center gap-1 cursor-pointer ${cs.important ? 'bg-amber-500 text-stone-950 border-amber-400' : 'bg-stone-800 text-stone-200 border-stone-600 hover:bg-stone-700'}">
                 📌 Importante
               </button>
-              <button type="button" id="modal-btn-archive" class="py-2 px-2 rounded font-bold text-xs border transition flex items-center justify-center gap-1 cursor-pointer ${cs.archived ? 'bg-red-900/80 text-red-100 border-red-500' : 'bg-stone-800 text-stone-200 border-stone-600 hover:bg-stone-700'}">
-                🗑️ ${cs.archived ? 'Archiviata' : 'Archivia'}
+              <button type="button" id="modal-btn-archive" class="py-2 px-2 rounded font-bold text-xs border transition flex items-center justify-center gap-1 cursor-pointer ${isCustom ? 'bg-red-950/90 text-red-200 border-red-600 hover:bg-red-800' : cs.archived ? 'bg-red-900/80 text-red-100 border-red-500' : 'bg-stone-800 text-stone-200 border-stone-600 hover:bg-stone-700'}">
+                🗑️ ${isCustom ? 'Elimina Nota' : cs.archived ? 'Archiviata' : 'Archivia'}
               </button>
             </div>
 
             <div class="pt-1">
               <label class="block text-[10px] font-mono-tech uppercase text-stone-400 mb-1">📁 Aggiungi / Sposta nel Gruppo:</label>
               <select id="modal-group-select" class="w-full bg-stone-950 border border-stone-700 rounded px-2.5 py-1.5 text-xs text-amber-300 font-semibold focus:outline-none focus:border-amber-500">
-                <option value="">— Seleziona un Gruppo esistente —</option>
+                <option value="__unassigned__" ${!currentGroup ? 'selected' : ''}>📥 Nuovi Reperti / Da Smistare</option>
                 ${state.groups.map(g => `<option value="${g.id}" ${currentGroup && currentGroup.id === g.id ? 'selected' : ''}>${escapeHtml(g.title)}</option>`).join('')}
                 <option value="__new_group__">➕ Crea Nuovo Gruppo con questa carta...</option>
               </select>
@@ -2156,7 +2894,7 @@
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono-tech text-stone-600 mb-1.5">
-              <span>💡 <b>Seleziona una frase o un orario</b> per evidenziarlo, copiarlo o inviarlo alla <b>⏱️ Timeline</b></span>
+              <span>💡 <b>Seleziona una parte di testo</b> per evidenziarla, copiarla, inviarla alla <b>⏱️ Timeline</b> o estrarla in una <b>✂️ Carta/Nota dedicata</b></span>
               ${cs.highlights.length > 0 ? `<button type="button" id="modal-btn-clear-hl" class="text-red-700 hover:underline font-bold cursor-pointer">🧽 Rimuovi evidenziazioni (${cs.highlights.length})</button>` : ''}
             </div>
 
@@ -2177,14 +2915,31 @@
       </div>
     `;
 
+    // Bind interactive zoom & pan on the illustration inside the Inspect Modal
+    bindInteractiveImageStage({
+      viewportEl: document.getElementById('modal-img-viewport'),
+      stageEl: document.getElementById('modal-img-stage'),
+      labelEl: document.getElementById('modal-img-zoom-label'),
+      btnIn: document.getElementById('modal-img-zoom-in'),
+      btnOut: document.getElementById('modal-img-zoom-out'),
+      btnReset: document.getElementById('modal-img-zoom-reset'),
+      maxScale: 4.5
+    });
+
+    document.getElementById('modal-img-fullscreen')?.addEventListener('click', () => {
+      openImageZoomModal(cardId);
+    });
+
     // Bind events inside inspect modal
     document.getElementById('modal-btn-collapse').addEventListener('click', () => {
       toggleCardCollapsed(cardId);
       openInspectModal(cardId);
     });
     document.getElementById('modal-btn-add-timeline').addEventListener('click', () => {
+      const timeRange = extractTimeRangeFromSnippet('', card.timestamp);
       openTimelineModal({
-        prefillTime: extractTimeFromSnippet('', card.timestamp),
+        prefillTime: timeRange.time,
+        prefillEndTime: timeRange.endTime,
         prefillLabel: card.title,
         prefillCardId: cardId,
         prefillColor: 'amber'
@@ -2195,6 +2950,10 @@
       openInspectModal(cardId);
     });
     document.getElementById('modal-btn-archive').addEventListener('click', () => {
+      if (isCustom) {
+        deleteCustomCard(cardId);
+        return;
+      }
       toggleCardArchive(cardId);
       openInspectModal(cardId);
     });
@@ -2203,6 +2962,10 @@
       if (!val) return;
       if (val === '__new_group__') {
         createNewGroupWithCards([cardId]);
+      } else if (val === '__unassigned__') {
+        if (state.cardsState[cardId]) state.cardsState[cardId].groupId = null;
+        renderAll();
+        saveState();
       } else {
         addCardsToGroup(val, [cardId]);
       }
@@ -2256,11 +3019,190 @@
 
   function navigateInspectModal(dir) {
     if (!state.scenario || !state.inspectedCardId) return;
-    const drawnCards = state.scenario.cards.slice(0, state.drawnCount);
+    const drawnCards = getActiveCards();
     const idx = drawnCards.findIndex(c => c.id === state.inspectedCardId);
     if (idx === -1) return;
     const nextIdx = (idx + dir + drawnCards.length) % drawnCards.length;
     openInspectModal(drawnCards[nextIdx].id);
+  }
+
+  /**
+   * Attaches interactive Zoom (100% -> 500%), Mouse Wheel Zoom, Drag-to-Pan,
+   * and Touch Pinch/Drag to any illustration viewport + stage container.
+   */
+  function bindInteractiveImageStage({ viewportEl, stageEl, labelEl, btnIn, btnOut, btnReset, maxScale = 5 }) {
+    if (!viewportEl || !stageEl) return null;
+    let scale = 1;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
+
+    function updateTransform() {
+      if (scale <= 1.01) {
+        scale = 1;
+        panX = 0;
+        panY = 0;
+      }
+      stageEl.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      if (labelEl) {
+        labelEl.textContent = `${Math.round(scale * 100)}%`;
+      }
+    }
+
+    function setZoom(newScale) {
+      scale = Math.min(maxScale, Math.max(1, newScale));
+      updateTransform();
+    }
+
+    btnIn?.addEventListener('click', e => {
+      e.stopPropagation();
+      setZoom(scale + 0.4);
+    });
+    btnOut?.addEventListener('click', e => {
+      e.stopPropagation();
+      setZoom(scale - 0.4);
+    });
+    btnReset?.addEventListener('click', e => {
+      e.stopPropagation();
+      scale = 1;
+      panX = 0;
+      panY = 0;
+      updateTransform();
+    });
+
+    viewportEl.onwheel = e => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.25 : -0.25;
+      setZoom(scale + delta);
+    };
+
+    viewportEl.onmousedown = e => {
+      if (e.button !== 0) return;
+      isDragging = true;
+      startX = e.clientX - panX;
+      startY = e.clientY - panY;
+    };
+
+    viewportEl.ondblclick = e => {
+      e.stopPropagation();
+      if (scale > 1.1) {
+        scale = 1;
+        panX = 0;
+        panY = 0;
+      } else {
+        scale = 2.2;
+      }
+      updateTransform();
+    };
+
+    window.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      panX = e.clientX - startX;
+      panY = e.clientY - startY;
+      updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    viewportEl.ontouchstart = e => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        pinchStartDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        pinchStartScale = scale;
+      } else if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - panX;
+        startY = e.touches[0].clientY - panY;
+      }
+    };
+
+    viewportEl.ontouchmove = e => {
+      if (e.touches.length === 2 && pinchStartDist > 0) {
+        e.preventDefault();
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        setZoom(pinchStartScale * (dist / pinchStartDist));
+      } else if (e.touches.length === 1 && isDragging && scale > 1) {
+        e.preventDefault();
+        panX = e.touches[0].clientX - startX;
+        panY = e.touches[0].clientY - startY;
+        updateTransform();
+      }
+    };
+
+    viewportEl.ontouchend = () => {
+      isDragging = false;
+      pinchStartDist = 0;
+    };
+
+    updateTransform();
+    return { setZoom, reset: () => { scale = 1; panX = 0; panY = 0; updateTransform(); } };
+  }
+
+  function openImageZoomModal(cardId) {
+    if (!state.scenario) return;
+    const card = state.scenario.cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    const modalEl = document.getElementById('image-zoom-modal');
+    const titleEl = document.getElementById('img-zoom-title');
+    const viewportEl = document.getElementById('img-zoom-viewport');
+    const stageEl = document.getElementById('img-zoom-stage');
+    const labelEl = document.getElementById('img-zoom-level');
+    const btnOpenCard = document.getElementById('btn-img-zoom-open-card');
+
+    if (!modalEl || !viewportEl || !stageEl) return;
+
+    if (titleEl) {
+      titleEl.textContent = `Tavola ${card.number} — ${card.title} (${card.category})`;
+    }
+
+    stageEl.innerHTML = `
+      <div class="w-full max-w-5xl aspect-[20/9] shadow-2xl rounded overflow-hidden border-2 border-stone-600">
+        ${window.ProfilerIllustrations.render(card.image, card.category, card.number, { showZoomHint: false })}
+      </div>
+    `;
+
+    // Replace buttons to avoid duplicate listeners across opens
+    const btnInOld = document.getElementById('btn-img-zoom-in');
+    const btnOutOld = document.getElementById('btn-img-zoom-out');
+    const btnResetOld = document.getElementById('btn-img-zoom-reset');
+    const btnIn = btnInOld.cloneNode(true);
+    const btnOut = btnOutOld.cloneNode(true);
+    const btnReset = btnResetOld.cloneNode(true);
+    btnInOld.replaceWith(btnIn);
+    btnOutOld.replaceWith(btnOut);
+    btnResetOld.replaceWith(btnReset);
+
+    if (btnOpenCard) {
+      btnOpenCard.onclick = () => {
+        modalEl.classList.add('hidden');
+        openInspectModal(cardId);
+      };
+    }
+
+    bindInteractiveImageStage({
+      viewportEl,
+      stageEl,
+      labelEl,
+      btnIn,
+      btnOut,
+      btnReset,
+      maxScale: 5
+    });
+
+    modalEl.classList.remove('hidden');
   }
 
   function openDossierModal() {
@@ -2318,8 +3260,32 @@
             `).join('')}
           </div>
         </div>
+
+        <!-- Prosecutor Questions Overview (Open-Ended, Zero Spoilers) -->
+        <div class="bg-amber-950/20 border border-amber-600/50 rounded-lg p-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div class="text-xs font-mono-tech font-bold uppercase tracking-wider text-amber-400">
+              ❓ Quesiti Ufficiali della Procura (Risposta Aperta a Fine Indagine)
+            </div>
+            <button type="button" id="btn-dossier-extract-questions" class="px-2.5 py-1 rounded bg-purple-800 hover:bg-purple-700 text-purple-100 border border-purple-400/60 font-mono-tech font-bold text-[11px] shadow transition cursor-pointer" title="Crea sulla lavagna una Carta/Nota dedicata contenente tutti i Quesiti della Procura">
+              ✂️ Estrai Quesiti in una Carta Dedicata
+            </button>
+          </div>
+          <div class="flex flex-col gap-1.5 text-xs text-stone-200 font-medium">
+            ${(state.scenario.solution || []).map(q => `
+              <div class="py-1 border-b border-stone-800/80 last:border-b-0">${escapeHtml(q.question)}</div>
+            `).join('')}
+          </div>
+        </div>
       </div>
     `;
+
+    document.getElementById('btn-dossier-extract-questions')?.addEventListener('click', () => {
+      const questionsText = 'QUESITI FINALI DELLA PROCURA:\n' + (state.scenario.solution || []).map(q => q.question).join('\n');
+      const firstCard = state.scenario.cards?.[0];
+      createCustomCardFromSnippet(firstCard ? firstCard.id : null, questionsText, 'Quesiti Ufficiali della Procura');
+      dom.dossierModal.classList.add('hidden');
+    });
 
     dom.dossierModal.classList.remove('hidden');
   }
@@ -2328,6 +3294,42 @@
     if (!state.scenario) return;
     renderSolveModalContent();
     dom.solveModal.classList.remove('hidden');
+  }
+
+  /**
+   * Evaluates an open-text investigator answer against the question's acceptedKeywords
+   * or falls back to matching significant keywords from officialAnswer / correct option.
+   */
+  function evaluateOpenAnswer(q, rawText) {
+    const overrideKey = '__override_' + q.id;
+    if (state.verdictAnswers && typeof state.verdictAnswers[overrideKey] === 'boolean') {
+      return state.verdictAnswers[overrideKey];
+    }
+
+    const text = String(rawText || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (text.trim().length < 3) return false;
+
+    if (Array.isArray(q.acceptedKeywords) && q.acceptedKeywords.length > 0) {
+      return q.acceptedKeywords.every(group =>
+        group.some(kw => {
+          const cleanKw = String(kw).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          return text.includes(cleanKw);
+        })
+      );
+    }
+
+    const reference = String(q.officialAnswer || (Array.isArray(q.options) ? q.options[q.correctOptionIndex] : '') || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    const stopWords = new Set(['della', 'dello', 'delle', 'degli', 'nella', 'nello', 'nelle', 'prima', 'dopo', 'stato', 'stata', 'aveva', 'hanno', 'perche', 'come', 'quando', 'contro', 'verso', 'senza', 'anche', 'solo', 'tutto']);
+    const tokens = reference
+      .split(/[^a-z0-9:]+/)
+      .filter(t => t.length >= 4 && !stopWords.has(t));
+
+    if (tokens.length === 0) return text.trim().length >= 5;
+    const matched = tokens.filter(t => text.includes(t));
+    return matched.length >= Math.min(2, Math.ceil(tokens.length * 0.35));
   }
 
   function renderSolveModalContent() {
@@ -2339,7 +3341,7 @@
     if (state.verdictSubmitted) {
       let correctCount = 0;
       questions.forEach(q => {
-        if (Number(state.verdictAnswers[q.id]) === q.correctOptionIndex) {
+        if (evaluateOpenAnswer(q, state.verdictAnswers[q.id])) {
           correctCount += 1;
         }
       });
@@ -2372,54 +3374,53 @@
           </div>
         </div>
       `;
-    } else if (state.drawnCount < totalCards) {
+    } else {
       scoreHtml = `
-        <div class="p-3 rounded-lg bg-amber-950/40 border border-amber-600/60 text-amber-200 text-xs mb-4 flex items-center justify-between">
-          <span>⚠️ Hai pescato <b>${state.drawnCount} carte su ${totalCards}</b>. Puoi consegnare il verdetto ora oppure pescare i reperti rimanenti.</span>
+        <div class="p-3.5 rounded-lg bg-stone-900 border border-amber-500/50 text-stone-200 text-xs mb-4 flex flex-col gap-1">
+          <div class="font-mono-tech font-bold text-amber-400 uppercase">⚖️ Deposito del Verdetto a Risposta Aperta (Senza Suggerimenti)</div>
+          <p class="text-stone-300 leading-relaxed">
+            Per non influenzare o semplificare l'indagine non sono presenti opzioni a scelta multipla. Scrivi liberamente le tue conclusioni per ciascun quesito (hai pescato <b>${state.drawnCount} carte su ${totalCards}</b>) e poi confrontale con gli atti ufficiali della Procura.
+          </p>
         </div>
       `;
     }
 
     const questionsHtml = questions.map(q => {
-      const selectedIdx = state.verdictAnswers[q.id];
-      const isCorrect = Number(selectedIdx) === q.correctOptionIndex;
+      const userAnswer = typeof state.verdictAnswers[q.id] === 'string' ? state.verdictAnswers[q.id] : '';
+      const isCorrect = state.verdictSubmitted ? evaluateOpenAnswer(q, userAnswer) : false;
+      const officialShort = q.officialAnswer || (Array.isArray(q.options) ? q.options[q.correctOptionIndex] : '');
 
       return `
-        <div class="bg-stone-900/90 border ${state.verdictSubmitted ? (isCorrect ? 'border-emerald-600' : 'border-red-600') : 'border-stone-700'} rounded-lg p-4 mb-4">
-          <h4 class="font-bold text-sm text-stone-100 mb-3">${escapeHtml(q.question)}</h4>
-          <div class="flex flex-col gap-2">
-            ${q.options.map((opt, oIdx) => {
-              const checked = Number(selectedIdx) === oIdx;
-              let optionStyle = 'bg-stone-800/80 border-stone-700 text-stone-200 hover:bg-stone-800';
-              if (state.verdictSubmitted) {
-                if (oIdx === q.correctOptionIndex) {
-                  optionStyle = 'bg-emerald-950/70 border-emerald-500 text-emerald-200 font-bold';
-                } else if (checked && oIdx !== q.correctOptionIndex) {
-                  optionStyle = 'bg-red-950/70 border-red-500 text-red-200 line-through';
-                } else {
-                  optionStyle = 'bg-stone-900/50 border-stone-800 text-stone-500';
-                }
-              } else if (checked) {
-                optionStyle = 'bg-amber-500/20 border-amber-500 text-amber-200 font-semibold';
-              }
-
-              return `
-                <label class="flex items-start gap-2.5 p-2.5 rounded border cursor-pointer transition text-xs ${optionStyle}">
-                  <input type="radio" name="verdict_${q.id}" value="${oIdx}"
-                    ${checked ? 'checked' : ''}
-                    ${state.verdictSubmitted ? 'disabled' : ''}
-                    data-question-id="${q.id}"
-                    class="mt-0.5 accent-amber-500" />
-                  <span>${escapeHtml(opt)}</span>
-                </label>
-              `;
-            }).join('')}
+        <div class="bg-stone-900/90 border ${state.verdictSubmitted ? (isCorrect ? 'border-emerald-600' : 'border-amber-600') : 'border-stone-700'} rounded-lg p-4 mb-4">
+          <div class="flex flex-wrap items-start justify-between gap-2 mb-2.5">
+            <h4 class="font-bold text-sm text-stone-100">${escapeHtml(q.question)}</h4>
+            ${state.verdictSubmitted ? `
+              <button type="button" data-toggle-score="${q.id}"
+                class="px-2.5 py-1 rounded text-[11px] font-mono-tech font-bold border transition cursor-pointer shrink-0 ${isCorrect ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300 hover:bg-emerald-900' : 'bg-stone-800 border-stone-600 text-stone-300 hover:bg-stone-700'}"
+                title="Clicca se la tua risposta aperta esprimeva il concetto corretto con parole diverse">
+                ${isCorrect ? '✔ Deduzione Esatta (Cambia)' : '✘ Segna come Indovinata'}
+              </button>
+            ` : ''}
           </div>
 
+          <textarea
+            rows="2"
+            data-question-input="${q.id}"
+            ${state.verdictSubmitted ? 'readonly' : ''}
+            placeholder="Scrivi qui la tua risposta deduttiva (es. nome, arma, orario, movente)..."
+            class="selectable-evidence-text w-full bg-stone-950 border ${state.verdictSubmitted ? (isCorrect ? 'border-emerald-500/70 text-emerald-100' : 'border-amber-500/70 text-amber-100') : 'border-stone-700 text-stone-100 focus:border-amber-500'} rounded-md p-2.5 text-xs font-medium focus:outline-none resize-y"
+          >${escapeHtml(userAnswer)}</textarea>
+
           ${state.verdictSubmitted ? `
-            <div class="mt-3 pt-3 border-t border-stone-700/80 text-xs leading-relaxed ${isCorrect ? 'text-emerald-300' : 'text-amber-300'}">
-              <span class="font-mono-tech font-bold uppercase">${isCorrect ? '✔ Deduzione Esatta:' : '✘ Ricostruzione Ufficiale:'}</span>
-              <p class="text-stone-300 mt-1">${escapeHtml(q.explanation)}</p>
+            <div class="mt-3 pt-3 border-t border-stone-700/80 text-xs leading-relaxed">
+              <div class="bg-stone-950/90 border-l-4 border-amber-500 px-3 py-2 rounded-r mb-2">
+                <span class="font-mono-tech font-bold uppercase text-amber-400 text-[11px]">🏛️ Risposta Ufficiale della Procura:</span>
+                <div class="text-stone-100 font-bold mt-0.5">${escapeHtml(officialShort)}</div>
+              </div>
+              <div class="text-stone-300">
+                <span class="font-mono-tech font-bold uppercase text-sky-400 text-[11px]">🔎 Spiegazione &amp; Prove Oggettive:</span>
+                <p class="mt-0.5">${escapeHtml(q.explanation)}</p>
+              </div>
             </div>
           ` : ''}
         </div>
@@ -2431,17 +3432,17 @@
       ${questionsHtml}
       <div class="bg-stone-900/90 border border-stone-700 rounded-lg p-4 mb-4">
         <label class="block text-xs font-mono-tech uppercase text-stone-400 mb-1.5">
-          📝 Relazione Conclusiva dell'Investigatore (Opzionale — Sintesi della dinamica)
+          📝 Appunti Generali sul Caso (Opzionale)
         </label>
         <textarea id="verdict-notes-input" rows="2" ${state.verdictSubmitted ? 'readonly' : ''}
-          placeholder="Annota qui la tua ricostruzione complessiva prima di depositare il verdetto..."
+          placeholder="Annota qui eventuali osservazioni aggiuntive..."
           class="selectable-evidence-text w-full bg-stone-950 border border-stone-700 rounded p-2.5 text-xs text-stone-200 focus:outline-none focus:border-amber-500"
         >${escapeHtml(state.verdictNotes || '')}</textarea>
       </div>
       <div class="flex items-center justify-end gap-3 pt-2">
         ${state.verdictSubmitted ? `
-          <button type="button" id="btn-reopen-verdict" class="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded-md text-xs font-bold transition">
-            🔄 Riprova Questionario
+          <button type="button" id="btn-reopen-verdict" class="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 rounded-md text-xs font-bold transition cursor-pointer">
+            🔄 Modifica Risposte
           </button>
         ` : `
           <button type="button" id="btn-submit-verdict" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-md text-xs font-extrabold shadow-lg transition cursor-pointer">
@@ -2451,11 +3452,22 @@
       </div>
     `;
 
-    container.querySelectorAll('input[type="radio"][data-question-id]').forEach(radio => {
-      radio.addEventListener('change', e => {
-        state.verdictAnswers[e.target.dataset.questionId] = Number(e.target.value);
-        renderSolveModalContent();
+    container.querySelectorAll('textarea[data-question-input]').forEach(area => {
+      area.addEventListener('input', e => {
+        state.verdictAnswers[e.target.dataset.questionInput] = e.target.value;
         saveState();
+      });
+    });
+
+    container.querySelectorAll('button[data-toggle-score]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const qId = btn.dataset.toggleScore;
+        const qObj = questions.find(item => item.id === qId);
+        if (!qObj) return;
+        const current = evaluateOpenAnswer(qObj, state.verdictAnswers[qId]);
+        state.verdictAnswers['__override_' + qId] = !current;
+        saveState();
+        renderSolveModalContent();
       });
     });
 
@@ -2470,9 +3482,12 @@
     const btnSubmit = document.getElementById('btn-submit-verdict');
     if (btnSubmit) {
       btnSubmit.addEventListener('click', () => {
-        const unanswered = questions.filter(q => state.verdictAnswers[q.id] === undefined);
+        const unanswered = questions.filter(q => {
+          const val = state.verdictAnswers[q.id];
+          return typeof val !== 'string' || val.trim().length === 0;
+        });
         if (unanswered.length > 0) {
-          showToast(`Rispondi a tutte le ${questions.length} domande prima di consegnare il verdetto!`, 'amber');
+          showToast(`Compila una risposta per tutte le ${questions.length} domande prima di consegnare il verdetto!`, 'amber');
           return;
         }
         state.verdictSubmitted = true;
@@ -2485,7 +3500,6 @@
     if (btnReopen) {
       btnReopen.addEventListener('click', () => {
         state.verdictSubmitted = false;
-        state.verdictAnswers = {};
         saveState();
         renderSolveModalContent();
       });
@@ -2571,6 +3585,13 @@
         hideTextSelectionToolbar();
       });
 
+      document.getElementById('btn-sel-to-card')?.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!state.activeSelection) return;
+        const { cardId, text } = state.activeSelection;
+        createCustomCardFromSnippet(cardId, text);
+      });
+
       document.getElementById('btn-sel-to-note').addEventListener('click', e => {
         e.stopPropagation();
         if (!state.activeSelection) return;
@@ -2595,15 +3616,16 @@
         e.stopPropagation();
         if (!state.activeSelection) return;
         const { cardId, text } = state.activeSelection;
-        const card = state.scenario?.cards.find(c => c.id === cardId);
-        const extractedTime = extractTimeFromSnippet(text, card ? card.timestamp : '');
+        const card = findCardById(cardId);
+        const timeRange = extractTimeRangeFromSnippet(text, card ? card.timestamp : '');
         const cleanLabel = text.replace(/\s+/g, ' ').slice(0, 85);
 
         window.getSelection()?.removeAllRanges();
         hideTextSelectionToolbar();
 
         openTimelineModal({
-          prefillTime: extractedTime,
+          prefillTime: timeRange.time,
+          prefillEndTime: timeRange.endTime,
           prefillLabel: cleanLabel,
           prefillCardId: cardId,
           prefillColor: 'amber'
@@ -2625,15 +3647,69 @@
       saveState();
     });
 
+    dom.btnToggleTimelineView?.addEventListener('click', () => {
+      const tracksCount = Array.isArray(state.timelineTracks) ? state.timelineTracks.length : 1;
+      const hasIntervals = state.timelineEvents.some(e => e.endTime && e.endTime.trim().length > 0);
+      const isCurrentlyGantt = state.timelineViewMode === 'gantt' || (state.timelineViewMode !== 'classic' && (tracksCount > 1 || hasIntervals));
+
+      if (isCurrentlyGantt) {
+        state.timelineViewMode = 'classic';
+        showToast('Passato a Visualizzazione Punti', 'stone');
+      } else {
+        state.timelineViewMode = 'gantt';
+        showToast('Passato a Visualizzazione Gantt', 'amber');
+      }
+      renderTimeline();
+      saveState();
+    });
+
     document.getElementById('btn-add-timeline-event').addEventListener('click', () => {
       const selectedCardId = state.selectedCards.size === 1 ? Array.from(state.selectedCards)[0] : '';
-      const card = (selectedCardId && state.scenario) ? state.scenario.cards.find(c => c.id === selectedCardId) : null;
+      const card = selectedCardId ? findCardById(selectedCardId) : null;
+      const range = card ? extractTimeRangeFromSnippet('', card.timestamp) : { time: '', endTime: '' };
       openTimelineModal({
-        prefillTime: card ? extractTimeFromSnippet('', card.timestamp) : '',
+        prefillTime: range.time,
+        prefillEndTime: range.endTime,
         prefillLabel: card ? card.title : '',
         prefillCardId: selectedCardId,
         prefillColor: 'amber'
       });
+    });
+
+    dom.btnAddTimelineTrack?.addEventListener('click', () => {
+      addTimelineTrack();
+    });
+
+    dom.btnModalAddTrack?.addEventListener('click', () => {
+      const created = addTimelineTrack();
+      populateTimelineTrackSelect(created.id);
+    });
+
+    document.querySelectorAll('[data-tl-duration-add]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const addMins = parseInt(btn.dataset.tlDurationAdd, 10);
+        const startVal = dom.tlTimeInput.value.trim();
+        if (!startVal) {
+          showToast('Inserisci prima un orario di inizio (es. 21:00)', 'amber');
+          dom.tlTimeInput.focus();
+          return;
+        }
+        const match = startVal.match(/(\d{1,2})[:.](\d{2})/);
+        if (!match) return;
+        let h = parseInt(match[1], 10);
+        let m = parseInt(match[2], 10);
+        let total = h * 60 + m + addMins;
+        let newH = Math.floor(total / 60) % 24;
+        let newM = total % 60;
+        if (dom.tlEndTimeInput) {
+          dom.tlEndTimeInput.value = `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+          dom.tlEndTimeInput.focus();
+        }
+      });
+    });
+
+    document.getElementById('btn-tl-clear-endtime')?.addEventListener('click', () => {
+      if (dom.tlEndTimeInput) dom.tlEndTimeInput.value = '';
     });
 
     dom.tlColorPicker.querySelectorAll('[data-tl-color]').forEach(btn => {
@@ -2670,21 +3746,13 @@
     dom.tlTimeInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') saveTimelineModal();
     });
+    dom.tlEndTimeInput?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveTimelineModal();
+    });
 
-    // 3. Mouse Wheel Zoom on Viewport
-    dom.viewport.addEventListener('wheel', e => {
-      const scrollArea = e.target.closest('.card-text-scroll-area');
-      if (scrollArea && scrollArea.scrollHeight > scrollArea.clientHeight) {
-        return;
-      }
-      e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 1.09 : 0.91;
-      zoomAtPoint(state.scale * zoomFactor, e.clientX, e.clientY);
-    }, { passive: false });
-
-    // 4. Viewport MouseDown: Pan OR Marquee Selection Box
-    dom.viewport.addEventListener('mousedown', e => {
-      if (e.target !== dom.viewport && e.target !== dom.world && e.target !== dom.groupsLayer && e.target !== dom.cardsLayer) {
+    // 3. Click on empty board background clears selection / link mode
+    dom.viewport.addEventListener('click', e => {
+      if (e.target.closest('.crime-card, .group-zone-header, button, input, textarea, select')) {
         return;
       }
 
@@ -2695,67 +3763,6 @@
         state.linkStartCardId = null;
         updateLinkBanner();
         renderCards();
-        renderStrings();
-        return;
-      }
-
-      const useMarquee = e.shiftKey || state.toolMode === 'select';
-
-      if (useMarquee && e.button === 0) {
-        const startClientX = e.clientX;
-        const startClientY = e.clientY;
-        dom.marqueeBox.style.display = 'block';
-        dom.marqueeBox.style.left = `${startClientX}px`;
-        dom.marqueeBox.style.top = `${startClientY}px`;
-        dom.marqueeBox.style.width = '0px';
-        dom.marqueeBox.style.height = '0px';
-
-        function onMarqueeMove(ev) {
-          const x = Math.min(startClientX, ev.clientX);
-          const y = Math.min(startClientY, ev.clientY);
-          const w = Math.abs(ev.clientX - startClientX);
-          const h = Math.abs(ev.clientY - startClientY);
-
-          dom.marqueeBox.style.left = `${x}px`;
-          dom.marqueeBox.style.top = `${y}px`;
-          dom.marqueeBox.style.width = `${w}px`;
-          dom.marqueeBox.style.height = `${h}px`;
-
-          const topLeftWorld = screenToWorld(x, y);
-          const bottomRightWorld = screenToWorld(x + w, y + h);
-
-          state.selectedCards.clear();
-          const drawnCards = state.scenario ? state.scenario.cards.slice(0, state.drawnCount) : [];
-          drawnCards.forEach(c => {
-            const cs = state.cardsState[c.id];
-            if (!cs) return;
-            const dims = getCardDimensions(cs);
-            const intersects =
-              cs.x < bottomRightWorld.x &&
-              cs.x + dims.width > topLeftWorld.x &&
-              cs.y < bottomRightWorld.y &&
-              cs.y + dims.height > topLeftWorld.y;
-
-            const domCard = document.getElementById(`card-${c.id}`);
-            if (intersects) {
-              state.selectedCards.add(c.id);
-              if (domCard) domCard.classList.add('is-selected');
-            } else if (domCard) {
-              domCard.classList.remove('is-selected');
-            }
-          });
-          updateMultiSelectToolbar();
-        }
-
-        function onMarqueeUp() {
-          dom.marqueeBox.style.display = 'none';
-          renderTimeline();
-          window.removeEventListener('mousemove', onMarqueeMove);
-          window.removeEventListener('mouseup', onMarqueeUp);
-        }
-
-        window.addEventListener('mousemove', onMarqueeMove);
-        window.addEventListener('mouseup', onMarqueeUp);
         return;
       }
 
@@ -2765,123 +3772,13 @@
         updateMultiSelectToolbar();
         renderTimeline();
       }
-
-      const startPanX = state.panX;
-      const startPanY = state.panY;
-      const startClientX = e.clientX;
-      const startClientY = e.clientY;
-      dom.viewport.style.cursor = 'grabbing';
-
-      function onPanMove(ev) {
-        state.panX = startPanX + (ev.clientX - startClientX);
-        state.panY = startPanY + (ev.clientY - startClientY);
-        updateWorldTransform();
-      }
-
-      function onPanUp() {
-        dom.viewport.style.cursor = '';
-        window.removeEventListener('mousemove', onPanMove);
-        window.removeEventListener('mouseup', onPanUp);
-        saveState();
-      }
-
-      window.addEventListener('mousemove', onPanMove);
-      window.addEventListener('mouseup', onPanUp);
-    });
-
-    // 5. Track mouse position for live Red String preview
-    dom.viewport.addEventListener('mousemove', e => {
-      if (state.linkStartCardId) {
-        state.mouseWorldPos = screenToWorld(e.clientX, e.clientY);
-        renderStrings();
-      }
-    });
-
-    // 5b. Smartphone & Tablet Touch Support (1-finger drag for Pan/Cards/Groups + 2-finger Pinch-to-Zoom)
-    let activeTouchDrag = false;
-    let pinchStartDist = 0;
-    let pinchStartScale = 1;
-
-    dom.viewport.addEventListener('touchstart', e => {
-      if (e.touches.length === 2) {
-        if (activeTouchDrag) {
-          activeTouchDrag = false;
-          window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-        }
-        e.preventDefault();
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        pinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        pinchStartScale = state.scale;
-        return;
-      }
-
-      if (e.touches.length === 1) {
-        const t = e.touches[0];
-        const target = t.target;
-        if (
-          target.closest('button, input, textarea, select, .card-text-scroll-area, .card-pin-wrapper, .string-label-badge')
-        ) {
-          return;
-        }
-        activeTouchDrag = true;
-        target.dispatchEvent(new MouseEvent('mousedown', {
-          bubbles: true,
-          cancelable: true,
-          clientX: t.clientX,
-          clientY: t.clientY,
-          button: 0
-        }));
-      }
-    }, { passive: false });
-
-    window.addEventListener('touchmove', e => {
-      if (e.touches.length === 2 && pinchStartDist > 0) {
-        e.preventDefault();
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        const midX = (t1.clientX + t2.clientX) / 2;
-        const midY = (t1.clientY + t2.clientY) / 2;
-        zoomAtPoint(pinchStartScale * (dist / pinchStartDist), midX, midY);
-        return;
-      }
-
-      if (activeTouchDrag && e.touches.length === 1) {
-        e.preventDefault();
-        const t = e.touches[0];
-        window.dispatchEvent(new MouseEvent('mousemove', {
-          bubbles: true,
-          cancelable: true,
-          clientX: t.clientX,
-          clientY: t.clientY,
-          button: 0
-        }));
-      }
-    }, { passive: false });
-
-    window.addEventListener('touchend', e => {
-      if (e.touches.length < 2) {
-        pinchStartDist = 0;
-      }
-      if (activeTouchDrag && e.touches.length === 0) {
-        activeTouchDrag = false;
-        const t = e.changedTouches[0];
-        window.dispatchEvent(new MouseEvent('mouseup', {
-          bubbles: true,
-          cancelable: true,
-          clientX: t ? t.clientX : 0,
-          clientY: t ? t.clientY : 0,
-          button: 0
-        }));
-      }
     });
 
     window.addEventListener('resize', () => {
       applySurfaceTheme();
     });
 
-    // 6. Keyboard Shortcuts (ESC, D to draw)
+    // 4. Keyboard Shortcuts (ESC, D to draw)
     window.addEventListener('keydown', e => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
         if (e.key === 'Escape') e.target.blur();
@@ -2898,6 +3795,7 @@
         dom.inspectModal.classList.add('hidden');
         dom.dossierModal.classList.add('hidden');
         dom.solveModal.classList.add('hidden');
+        document.getElementById('image-zoom-modal')?.classList.add('hidden');
         closeStringModal();
         closeTimelineModal();
         renderCards();
@@ -2907,29 +3805,34 @@
       }
     });
 
-    // 7. Top Bar & HUD Controls
+    // 5. Top Bar Controls
     document.getElementById('btn-add-group').addEventListener('click', () => {
-      const center = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
       const themeKey = THEME_KEYS[state.groups.length % THEME_KEYS.length];
-      state.groups.push({
+      const newGroup = {
         id: 'grp-' + Date.now(),
         title: '📁 NUOVA AREA DI RAGGRUPPAMENTO',
-        x: Math.round(center.x - 220),
-        y: Math.round(center.y - 160),
-        width: 540,
-        height: 340,
         theme: themeKey
-      });
+      };
+      state.groups.push(newGroup);
       renderGroups();
+      renderCards();
       saveState();
-      showToast('Nuova Area di Raggruppamento creata sulla lavagna', 'amber');
+      const gEl = document.getElementById(`group-${newGroup.id}`);
+      if (gEl) {
+        gEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        gEl.classList.add('group-expanded-flash');
+        setTimeout(() => gEl.classList.remove('group-expanded-flash'), 800);
+      }
+      showToast('Nuova Area di Raggruppamento aggiunta alla griglia', 'amber');
     });
 
-    dom.btnToolSelect.addEventListener('click', () => {
-      state.toolMode = state.toolMode === 'select' ? 'pan' : 'select';
-      state.linkStartCardId = null;
-      updateToolButtons();
-      updateLinkBanner();
+    document.getElementById('btn-add-custom-card')?.addEventListener('click', () => {
+      const created = createCustomCardFromSnippet(null, '');
+      if (created && state.cardsState[created.id]) {
+        state.cardsState[created.id].editingCustomText = true;
+        renderBoard();
+        saveState();
+      }
     });
 
     dom.btnToolLink.addEventListener('click', () => {
@@ -3000,30 +3903,10 @@
       }
     });
 
-    document.getElementById('btn-zoom-in').addEventListener('click', () => {
-      zoomAtPoint(state.scale * 1.15, window.innerWidth / 2, window.innerHeight / 2);
-    });
-    document.getElementById('btn-zoom-out').addEventListener('click', () => {
-      zoomAtPoint(state.scale * 0.85, window.innerWidth / 2, window.innerHeight / 2);
-    });
-    document.getElementById('btn-zoom-reset').addEventListener('click', centerViewOnBoard);
-
     dom.btnSurfaceToggle.addEventListener('click', () => {
       state.boardSurface = state.boardSurface === 'anthracite' ? 'cork' : 'anthracite';
       applySurfaceTheme();
       saveState();
-    });
-
-    const commandsBanner = document.getElementById('hud-commands-banner');
-    document.getElementById('btn-toggle-commands-banner')?.addEventListener('click', () => {
-      if (!commandsBanner) return;
-      const isHidden = commandsBanner.classList.contains('!hidden');
-      state.commandsBannerDismissed = !isHidden;
-      commandsBanner.classList.toggle('!hidden', !isHidden);
-    });
-    document.getElementById('btn-close-commands-banner')?.addEventListener('click', () => {
-      state.commandsBannerDismissed = true;
-      commandsBanner?.classList.add('!hidden');
     });
 
     // Selection bar controls (works for 1 or more selected cards)
@@ -3034,6 +3917,13 @@
       e.target.value = '';
       if (val === '__new_group__') {
         createNewGroupWithCards(selectedIds);
+      } else if (val === '__unassigned__') {
+        selectedIds.forEach(cid => {
+          if (state.cardsState[cid]) state.cardsState[cid].groupId = null;
+        });
+        renderAll();
+        saveState();
+        showToast('Carte riportate in "Nuovi Reperti / Da Smistare"', 'stone');
       } else {
         addCardsToGroup(val, selectedIds);
       }
@@ -3120,6 +4010,7 @@
   }
 
   function updateToolButtons() {
+    if (!dom.btnToolSelect) return;
     if (state.toolMode === 'select') {
       dom.btnToolSelect.className = 'px-3 py-1.5 bg-sky-600 text-white border border-sky-400 rounded-md text-xs font-bold shadow transition flex items-center gap-1.5';
     } else {
