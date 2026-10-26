@@ -123,6 +123,24 @@ body {
   color: #0c0a09;
 }
 
+/* Forensic Quick Highlighter Active Mode (Suppresses Native Mobile Context Menu!) */
+body.highlighter-mode-active .selectable-evidence-text {
+  cursor: crosshair !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+body.highlighter-mode-active .card-raw-text {
+  outline: 2px dashed rgba(245, 158, 11, 0.55);
+  outline-offset: 1px;
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+#highlighter-mode-bar {
+  z-index: 99999;
+}
+
 /* Forensic Highlighter Marks */
 mark.forensic-hl {
   border-radius: 2px;

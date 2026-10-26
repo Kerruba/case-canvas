@@ -68,6 +68,12 @@
         <span>🧶 Filo Rosso</span>
       </button>
 
+      <button id="btn-toggle-highlighter" type="button" class="px-2 sm:px-2.5 py-1 sm:py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 rounded-md text-[11px] sm:text-xs font-medium transition flex items-center gap-1.5 cursor-pointer shrink-0" title="Attiva la Modalità Evidenziatore Rapido (tocca una frase o parola per evidenziarla all'istante senza menu del cellulare)">
+        <span>🖊️</span>
+        <span class="hidden sm:inline">Evidenziatore</span>
+        <span id="highlighter-color-dot" class="w-2.5 h-2.5 rounded-full bg-yellow-300 inline-block border border-stone-900 shadow-sm"></span>
+      </button>
+
       <button id="btn-surface-toggle" type="button" class="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md bg-stone-900 hover:bg-stone-800 text-[11px] sm:text-xs font-medium text-stone-300 border border-stone-700/80 cursor-pointer shrink-0" title="Cambia materiale dello sfondo">
         ⬛ Antracite
       </button>
@@ -243,6 +249,34 @@
         ⏱️ +Timeline
       </button>
     </div>
+  </div>
+
+  <!-- =====================================================================
+       FORENSIC HIGHLIGHTER HUD BAR (MODALITÀ EVIDENZIATORE RAPIDO FORENSE)
+       ===================================================================== -->
+  <div id="highlighter-mode-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-[96vw] bg-stone-950/95 backdrop-blur-md border-2 border-amber-500/80 rounded-xl px-3 py-2 shadow-2xl flex items-center gap-2 text-xs animate-in fade-in slide-in-from-bottom-2">
+    <div class="flex items-center gap-1.5 mr-0.5">
+      <span class="text-sm">🖊️</span>
+      <span class="font-mono-tech font-extrabold text-[11px] text-amber-300 uppercase tracking-wider hidden xs:inline sm:inline">Evidenziatore:</span>
+    </div>
+
+    <!-- Color Palette Buttons -->
+    <div class="flex items-center gap-1.5">
+      <button type="button" data-hl-mode-color="yellow" class="hl-mode-btn w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-yellow-300 border-2 border-white shadow-md hover:scale-110 active:scale-95 transition cursor-pointer flex items-center justify-center text-[11px] font-bold text-stone-900" title="Giallo: Indizio Chiave">✓</button>
+      <button type="button" data-hl-mode-color="red" class="hl-mode-btn w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-red-400 border border-stone-800 hover:scale-110 active:scale-95 transition cursor-pointer flex items-center justify-center text-[11px] font-bold text-stone-900" title="Rosso: Contraddizione / Sospetto"></button>
+      <button type="button" data-hl-mode-color="green" class="hl-mode-btn w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-emerald-400 border border-stone-800 hover:scale-110 active:scale-95 transition cursor-pointer flex items-center justify-center text-[11px] font-bold text-stone-900" title="Verde: Alibi / Dato Confermato"></button>
+      <button type="button" data-hl-mode-color="blue" class="hl-mode-btn w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-sky-400 border border-stone-800 hover:scale-110 active:scale-95 transition cursor-pointer flex items-center justify-center text-[11px] font-bold text-stone-900" title="Blu: Orario / Timeline"></button>
+      <button type="button" data-hl-mode-color="eraser" class="hl-mode-btn px-2 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 text-xs font-semibold hover:scale-105 active:scale-95 transition cursor-pointer" title="Gomma: tocca una frase evidenziata per cancellare l'evidenziazione">🧽</button>
+    </div>
+
+    <div class="h-4 w-px bg-stone-700 mx-1"></div>
+
+    <span class="text-[10px] font-mono-tech text-stone-400 hidden md:inline">Tocca una frase per evidenziarla</span>
+
+    <!-- Exit / Close Button -->
+    <button id="btn-close-highlighter-mode" type="button" class="ml-1 px-2.5 py-1 bg-stone-800 hover:bg-red-900/60 text-stone-300 hover:text-white border border-stone-600 rounded text-xs font-bold transition cursor-pointer flex items-center gap-1" title="Disattiva modalità evidenziatore">
+      ✕ <span class="hidden sm:inline">Esci</span>
+    </button>
   </div>
 
   <!-- =====================================================================

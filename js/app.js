@@ -179,6 +179,8 @@
     editingTimelineColor: 'amber',
     groupPopoverCardId: null,
     activeSelection: null, // { cardId, text }
+    highlighterMode: false,
+    activeHighlighterColor: 'yellow',
     verdictSubmitted: false,
     verdictAnswers: {},
     verdictNotes: ''
@@ -236,6 +238,11 @@
 
     // Text selection highlighter toolbar
     dom.textSelectionToolbar = document.getElementById('text-selection-toolbar');
+
+    // Forensic Quick Highlighter HUD
+    dom.btnToggleHighlighter = document.getElementById('btn-toggle-highlighter');
+    dom.highlighterModeBar = document.getElementById('highlighter-mode-bar');
+    dom.highlighterColorDot = document.getElementById('highlighter-color-dot');
 
     // Link Mode Banner
     dom.linkModeBanner = document.getElementById('link-mode-banner');
@@ -1738,6 +1745,163 @@
   }
 
   // =========================================================================
+  // FORENSIC QUICK HIGHLIGHTER MODE (ZERO NATIVE MOBILE MENU CONFLICT)
+  // =========================================================================
+
+  const HIGHLIGHTER_COLOR_NAMES = {
+    yellow: 'Giallo (Indizio)',
+    red: 'Rosso (Contraddizione)',
+    green: 'Verde (Alibi)',
+    blue: 'Blu (Timeline)',
+    eraser: 'Gomma'
+  };
+
+  const HIGHLIGHTER_COLOR_CLASSES = {
+    yellow: 'bg-yellow-300',
+    red: 'bg-red-400',
+    green: 'bg-emerald-400',
+    blue: 'bg-sky-400',
+    eraser: 'bg-stone-500'
+  };
+
+  function getHighlighterColorName(color) {
+    return HIGHLIGHTER_COLOR_NAMES[color] || color;
+  }
+
+  function getCaretRangeFromPoint(x, y) {
+    if (typeof document.caretPositionFromPoint === 'function') {
+      const pos = document.caretPositionFromPoint(x, y);
+      if (pos && pos.offsetNode) {
+        const range = document.createRange();
+        range.setStart(pos.offsetNode, pos.offset);
+        range.collapse(true);
+        return range;
+      }
+    }
+    if (typeof document.caretRangeFromPoint === 'function') {
+      return document.caretRangeFromPoint(x, y);
+    }
+    return null;
+  }
+
+  function extractSentenceAtOffset(fullText, offset) {
+    if (!fullText || typeof fullText !== 'string') return '';
+    const text = fullText;
+    const len = text.length;
+    const safeOffset = Math.max(0, Math.min(len - 1, offset));
+
+    const isBoundary = ch => ch === '\n' || ch === '\r' || ch === '•' || ch === '-' || ch === '–';
+    const isTerminator = ch => ch === '.' || ch === '!' || ch === '?';
+
+    let start = safeOffset;
+    while (start > 0) {
+      const prevChar = text[start - 1];
+      if (isBoundary(prevChar)) break;
+      if (isTerminator(prevChar) && start < safeOffset) {
+        const isTimeOrAbbr = /\d\.\d|[A-Z][a-z]{1,3}\./.test(text.slice(Math.max(0, start - 4), start));
+        if (!isTimeOrAbbr) break;
+      }
+      start--;
+    }
+
+    let end = safeOffset;
+    while (end < len) {
+      const char = text[end];
+      if (isBoundary(char)) break;
+      if (isTerminator(char)) {
+        const isTimeOrAbbr = /\d\.\d|[A-Z][a-z]{1,3}\./.test(text.slice(Math.max(0, end - 3), end + 2));
+        if (!isTimeOrAbbr) {
+          end++;
+          break;
+        }
+      }
+      end++;
+    }
+
+    return text.slice(start, end).trim();
+  }
+
+  function removeOverlappingHighlights(cardId, targetText) {
+    const cs = state.cardsState[cardId];
+    if (!cs || !Array.isArray(cs.highlights)) return;
+    const cleanTarget = targetText.trim().toLowerCase();
+    const initialLen = cs.highlights.length;
+    cs.highlights = cs.highlights.filter(h => {
+      const hText = (h.text || '').trim().toLowerCase();
+      return !hText.includes(cleanTarget) && !cleanTarget.includes(hText);
+    });
+    if (cs.highlights.length < initialLen) {
+      renderCards();
+      if (state.inspectedCardId === cardId && !dom.inspectModal.classList.contains('hidden')) {
+        openInspectModal(cardId);
+      }
+      saveState();
+      showToast('Evidenziazione rimossa 🧽', 'stone');
+    }
+  }
+
+  function setHighlighterColor(color) {
+    state.activeHighlighterColor = color;
+    updateHighlighterModeUI();
+  }
+
+  function updateHighlighterModeUI() {
+    if (dom.highlighterColorDot) {
+      const color = state.activeHighlighterColor;
+      dom.highlighterColorDot.className = `w-2.5 h-2.5 rounded-full inline-block border border-stone-900 shadow-sm ${HIGHLIGHTER_COLOR_CLASSES[color] || 'bg-yellow-300'}`;
+    }
+
+    if (dom.highlighterModeBar) {
+      dom.highlighterModeBar.querySelectorAll('[data-hl-mode-color]').forEach(btn => {
+        const c = btn.dataset.hlModeColor;
+        const isActive = c === state.activeHighlighterColor;
+        if (c === 'eraser') {
+          if (isActive) {
+            btn.className = 'hl-mode-btn px-2.5 py-1 rounded bg-amber-500 text-stone-950 font-bold border-2 border-white shadow-md text-xs transition cursor-pointer scale-105';
+          } else {
+            btn.className = 'hl-mode-btn px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 text-xs font-semibold transition cursor-pointer';
+          }
+        } else {
+          if (isActive) {
+            btn.className = `hl-mode-btn w-7 h-7 sm:w-6 sm:h-6 rounded-full ${HIGHLIGHTER_COLOR_CLASSES[c]} border-2 border-white shadow-md scale-110 transition cursor-pointer flex items-center justify-center text-[11px] font-bold text-stone-900 ring-2 ring-amber-400`;
+            btn.textContent = '✓';
+          } else {
+            btn.className = `hl-mode-btn w-7 h-7 sm:w-6 sm:h-6 rounded-full ${HIGHLIGHTER_COLOR_CLASSES[c]} border border-stone-800 hover:scale-105 transition cursor-pointer flex items-center justify-center text-[11px] font-bold text-stone-900`;
+            btn.textContent = '';
+          }
+        }
+      });
+    }
+  }
+
+  function toggleHighlighterMode(forceState = null) {
+    const next = forceState !== null ? forceState : !state.highlighterMode;
+    state.highlighterMode = next;
+
+    if (dom.btnToggleHighlighter) {
+      if (next) {
+        dom.btnToggleHighlighter.classList.add('bg-amber-500/25', 'border-amber-400', 'text-amber-200', 'ring-2', 'ring-amber-400/50');
+        dom.btnToggleHighlighter.classList.remove('bg-stone-800', 'border-stone-700', 'text-stone-200');
+      } else {
+        dom.btnToggleHighlighter.classList.remove('bg-amber-500/25', 'border-amber-400', 'text-amber-200', 'ring-2', 'ring-amber-400/50');
+        dom.btnToggleHighlighter.classList.add('bg-stone-800', 'border-stone-700', 'text-stone-200');
+      }
+    }
+
+    if (dom.highlighterModeBar) {
+      if (next) {
+        dom.highlighterModeBar.classList.remove('hidden');
+        updateHighlighterModeUI();
+        showToast('🖊️ Modalità Evidenziatore: tocca una frase o parola per evidenziarla', 'amber');
+      } else {
+        dom.highlighterModeBar.classList.add('hidden');
+      }
+    }
+
+    document.body?.classList.toggle('highlighter-mode-active', next);
+  }
+
+  // =========================================================================
   // RENDERING: GROUPS, CARDS, RED STRINGS & TIMELINE
   // =========================================================================
 
@@ -2312,6 +2476,20 @@
           e.stopPropagation();
           const idx = Number(markEl.dataset.hlIdx);
           if (!Number.isNaN(idx)) {
+            if (state.highlighterMode && state.activeHighlighterColor !== 'eraser') {
+              const cs = state.cardsState[cardId];
+              if (cs && Array.isArray(cs.highlights) && cs.highlights[idx]) {
+                if (cs.highlights[idx].color === state.activeHighlighterColor) {
+                  removeHighlightByIndex(cardId, idx);
+                } else {
+                  cs.highlights[idx].color = state.activeHighlighterColor;
+                  renderCards();
+                  saveState();
+                  showToast(`Colore aggiornato a ${getHighlighterColorName(state.activeHighlighterColor)}`, state.activeHighlighterColor);
+                }
+                return;
+              }
+            }
             removeHighlightByIndex(cardId, idx);
           }
         });
@@ -2985,6 +3163,21 @@
           e.stopPropagation();
           const idx = Number(markEl.dataset.hlIdx);
           if (!Number.isNaN(idx)) {
+            if (state.highlighterMode && state.activeHighlighterColor !== 'eraser') {
+              const cs = state.cardsState[cardId];
+              if (cs && Array.isArray(cs.highlights) && cs.highlights[idx]) {
+                if (cs.highlights[idx].color === state.activeHighlighterColor) {
+                  removeHighlightByIndex(cardId, idx);
+                } else {
+                  cs.highlights[idx].color = state.activeHighlighterColor;
+                  renderCards();
+                  openInspectModal(cardId);
+                  saveState();
+                  showToast(`Colore aggiornato a ${getHighlighterColorName(state.activeHighlighterColor)}`, state.activeHighlighterColor);
+                }
+                return;
+              }
+            }
             removeHighlightByIndex(cardId, idx);
           }
         });
@@ -3529,7 +3722,7 @@
     }
 
     function updateTextSelectionToolbar() {
-      if (state.isInteractingWithToolbar) return;
+      if (state.isInteractingWithToolbar || state.highlighterMode) return;
 
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed) {
@@ -3743,7 +3936,113 @@
       });
     }
 
-    // 2. Timeline Bar & Modal Controls
+    // 2. Forensic Quick Highlighter HUD & Direct Touch/Click Handlers
+    dom.btnToggleHighlighter?.addEventListener('click', () => {
+      toggleHighlighterMode();
+    });
+
+    document.getElementById('btn-close-highlighter-mode')?.addEventListener('click', () => {
+      toggleHighlighterMode(false);
+    });
+
+    dom.highlighterModeBar?.querySelectorAll('[data-hl-mode-color]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setHighlighterColor(btn.dataset.hlModeColor);
+      });
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && state.highlighterMode) {
+        toggleHighlighterMode(false);
+      }
+    });
+
+    let hlPointerStartPos = null;
+    let hlPointerStartTime = 0;
+    let hlStartCaretRange = null;
+
+    document.addEventListener('pointerdown', e => {
+      if (!state.highlighterMode) return;
+      const evidenceBox = e.target.closest('[data-evidence-card-id]');
+      if (!evidenceBox) return;
+
+      if (e.target.closest('input, textarea, button, select, [contenteditable]')) return;
+      if (e.target.closest('mark.forensic-hl')) return;
+
+      hlPointerStartPos = { x: e.clientX, y: e.clientY };
+      hlPointerStartTime = Date.now();
+      hlStartCaretRange = getCaretRangeFromPoint(e.clientX, e.clientY);
+
+      if (e.pointerType === 'touch') {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    document.addEventListener('pointerup', e => {
+      if (!state.highlighterMode || !hlPointerStartPos) return;
+      const evidenceBox = e.target.closest('[data-evidence-card-id]');
+      if (!evidenceBox) {
+        hlPointerStartPos = null;
+        return;
+      }
+
+      const cardId = evidenceBox.dataset.evidenceCardId;
+      if (!cardId) {
+        hlPointerStartPos = null;
+        return;
+      }
+
+      const dx = Math.abs(e.clientX - hlPointerStartPos.x);
+      const dy = Math.abs(e.clientY - hlPointerStartPos.y);
+      const distance = Math.hypot(dx, dy);
+      const duration = Date.now() - hlPointerStartTime;
+
+      if (distance > 18) {
+        const hlEndCaretRange = getCaretRangeFromPoint(e.clientX, e.clientY);
+        if (hlStartCaretRange && hlEndCaretRange) {
+          try {
+            const selectionRange = document.createRange();
+            const comp = hlStartCaretRange.compareBoundaryPoints(Range.START_TO_START, hlEndCaretRange);
+            if (comp <= 0) {
+              selectionRange.setStart(hlStartCaretRange.startContainer, hlStartCaretRange.startOffset);
+              selectionRange.setEnd(hlEndCaretRange.startContainer, hlEndCaretRange.startOffset);
+            } else {
+              selectionRange.setStart(hlEndCaretRange.startContainer, hlEndCaretRange.startOffset);
+              selectionRange.setEnd(hlStartCaretRange.startContainer, hlStartCaretRange.startOffset);
+            }
+            const draggedText = selectionRange.toString().trim();
+            if (draggedText.length >= 2) {
+              if (state.activeHighlighterColor === 'eraser') {
+                removeOverlappingHighlights(cardId, draggedText);
+              } else {
+                addHighlightToCard(cardId, draggedText, state.activeHighlighterColor);
+                showToast(`Evidenziato in ${getHighlighterColorName(state.activeHighlighterColor)}!`, state.activeHighlighterColor);
+              }
+            }
+          } catch (_) {}
+        }
+      } else if (duration < 700) {
+        const caret = getCaretRangeFromPoint(e.clientX, e.clientY) || hlStartCaretRange;
+        if (caret && caret.startContainer) {
+          const node = caret.startContainer;
+          const textContent = node.textContent;
+          const sentence = extractSentenceAtOffset(textContent, caret.startOffset);
+          if (sentence && sentence.length >= 2) {
+            if (state.activeHighlighterColor === 'eraser') {
+              removeOverlappingHighlights(cardId, sentence);
+            } else {
+              addHighlightToCard(cardId, sentence, state.activeHighlighterColor);
+              showToast(`Evidenziata frase in ${getHighlighterColorName(state.activeHighlighterColor)}!`, state.activeHighlighterColor);
+            }
+          }
+        }
+      }
+
+      hlPointerStartPos = null;
+      hlStartCaretRange = null;
+    });
+
+    // 3. Timeline Bar & Modal Controls
     document.getElementById('btn-toggle-timeline-bar').addEventListener('click', () => {
       state.timelineCollapsed = !state.timelineCollapsed;
       renderTimeline();
